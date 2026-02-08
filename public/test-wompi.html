@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Wompi POST</title>
+</head>
+
+<body>
+    <h1>Test Wompi Checkout POST</h1>
+    <button onclick="submitForm()">Pagar con Wompi</button>
+
+    <script>
+        function submitForm() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'https://checkout.wompi.co/p/';
+
+            const params = {
+                'public-key': 'pub_test_8zS1Rnykkx6vgJTIRCXvpeobPADtEyKp',
+                'currency': 'COP',
+                'amount-in-cents': '4500000',
+                'reference': 'TEST-ORDER-' + Date.now(),
+                'signature:integrity': 'c8caced8445861b0f70a2e02dcbd8e1adb563e908fb562d40b5d895d73238046',
+                'redirect-url': 'http://localhost:5173/client/orders'
+            };
+
+            console.log('Submitting form with params:', params);
+
+            for (const key in params) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = params[key];
+                form.appendChild(input);
+                console.log(`Added input: ${key} = ${params[key]}`);
+            }
+
+            document.body.appendChild(form);
+            console.log('Form HTML:', form.outerHTML);
+            form.submit();
+        }
+    </script>
+</body>
+
+</html>
