@@ -441,27 +441,28 @@ export default function Cart() {
                 {/* Cart Items List */}
                 <div className="lg:col-span-2 space-y-4">
                     {items.map(item => (
-                        <div key={item.id} className="bg-sc-navy-card/80 backdrop-blur-md p-5 rounded-2xl border border-white/5 flex gap-5 transition hover:border-sc-cyan/20 group">
+                        <div key={item.id} className="bg-sc-navy-card/80 backdrop-blur-md p-3 md:p-5 rounded-2xl border border-white/5 flex gap-3 md:gap-5 transition hover:border-sc-cyan/20 group relative">
                             {/* Image */}
-                            <div className="w-28 h-28 bg-sc-navy rounded-xl overflow-hidden flex-shrink-0 border border-white/5">
+                            <div className="w-24 h-24 md:w-28 md:h-28 bg-sc-navy rounded-xl overflow-hidden flex-shrink-0 border border-white/5">
                                 <img src={getImageUrl(item.imagen)} alt={item.producto_nombre} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                             </div>
 
                             {/* Info */}
-                            <div className="flex-1 flex flex-col justify-between">
+                            <div className="flex-1 flex flex-col justify-between min-w-0">
                                 <div>
-                                    <div className="flex justify-between items-start">
-                                        <h3 className="font-bold text-white text-base md:text-lg line-clamp-2 leading-tight mb-1">
+                                    <div className="flex justify-between items-start gap-2">
+                                        <h3 className="font-bold text-white text-sm md:text-lg line-clamp-2 leading-tight mb-1 pr-8 md:pr-0">
                                             {item.producto_nombre}
                                         </h3>
+                                        {/* Delete Button - Positioned absolute on mobile to save space */}
                                         <button
                                             onClick={() => removeItem(item.id)}
-                                            className="text-slate-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+                                            className="text-slate-500 hover:text-red-400 p-1.5 md:p-2 hover:bg-red-500/10 rounded-lg transition-colors absolute top-2 right-2 md:static md:top-auto md:right-auto"
                                         >
                                             <Trash2 size={18} />
                                         </button>
                                     </div>
-                                    <div className="flex flex-wrap gap-2 text-xs text-slate-400 mt-2">
+                                    <div className="flex flex-wrap gap-2 text-[10px] md:text-xs text-slate-400 mt-1 md:mt-2">
                                         {Object.entries(item.atributos).map(([key, val]) => (
                                             <span key={key} className="bg-white/5 border border-white/5 px-2 py-1 rounded-md">
                                                 {key}: <span className="text-slate-200">{val}</span>
@@ -470,27 +471,27 @@ export default function Cart() {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-between items-end mt-4">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mt-3 md:mt-4">
                                     <div className="text-white">
                                         <Price price={item.precio_unitario} discountPercent={item.descuento || 0} size="lg" />
                                     </div>
 
-                                    {/* Qty Controls */}
-                                    <div className="flex items-center bg-sc-navy border border-slate-700 rounded-xl h-10">
+                                    {/* Qty Controls - Larger touch targets & better spacing */}
+                                    <div className="flex items-center bg-sc-navy border border-slate-700 rounded-xl h-10 w-fit self-start sm:self-auto">
                                         <button
                                             onClick={() => updateQuantity(item.id, -1)}
-                                            className="w-10 h-full flex items-center justify-center hover:bg-white/5 text-slate-400 hover:text-white rounded-l-xl transition-colors disabled:opacity-30"
+                                            className="w-10 h-full flex items-center justify-center hover:bg-white/5 text-slate-400 hover:text-white rounded-l-xl transition-colors disabled:opacity-30 active:bg-white/10"
                                             disabled={item.cantidad <= 1}
                                         >
-                                            <Minus size={16} />
+                                            <Minus size={18} />
                                         </button>
-                                        <span className="w-8 text-center text-sm font-bold text-white">{item.cantidad}</span>
+                                        <span className="w-10 text-center text-sm font-bold text-white border-x border-slate-700/50 h-full flex items-center justify-center">{item.cantidad}</span>
                                         <button
                                             onClick={() => updateQuantity(item.id, 1)}
-                                            className="w-10 h-full flex items-center justify-center hover:bg-white/5 text-slate-400 hover:text-white rounded-r-xl transition-colors disabled:opacity-30"
+                                            className="w-10 h-full flex items-center justify-center hover:bg-white/5 text-slate-400 hover:text-white rounded-r-xl transition-colors disabled:opacity-30 active:bg-white/10"
                                             disabled={item.cantidad >= item.stock_max}
                                         >
-                                            <Plus size={16} />
+                                            <Plus size={18} />
                                         </button>
                                     </div>
                                 </div>
