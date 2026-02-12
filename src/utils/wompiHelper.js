@@ -1,15 +1,6 @@
 import Swal from 'sweetalert2';
 
 /**
- * Detecta si estamos en localhost
- */
-const isLocalhost = () => {
-    return window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.includes('192.168.');
-};
-
-/**
  * Abre el modal de selección de método de pago Wompi (Widget o Web)
  * @param {Object} wompiParams - Parámetros de Wompi del backend
  * @param {Function} onSuccess - Callback cuando el pago es exitoso
@@ -17,26 +8,7 @@ const isLocalhost = () => {
  */
 export const openWompiPayment = async (wompiParams, onSuccess, onError) => {
     try {
-        // Si estamos en localhost, usar directamente Web Checkout (CloudFront bloquea localhost)
-        if (isLocalhost()) {
-            console.log('🌐 Localhost detectado - Usando Web Checkout automáticamente');
-            Swal.fire({
-                title: 'Redirigiendo a Wompi',
-                text: 'Serás redirigido a la página de pago segura de Wompi',
-                icon: 'info',
-                timer: 2000,
-                showConfirmButton: false,
-                background: '#151E32',
-                color: '#fff'
-            });
-
-            // Esperar 2 segundos y redirigir
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            openWompiWeb(wompiParams);
-            return;
-        }
-
-        // Mostrar modal de selección (solo en producción)
+        // Mostrar modal de selección
         const result = await Swal.fire({
             title: '<strong class="text-white text-xl">¿Cómo prefieres pagar?</strong>',
             html: `
@@ -110,21 +82,39 @@ const openWompiWidget = async (wompiParams, onSuccess, onError) => {
         console.log('📦 Wompi Params for Widget:', wompiParams);
 
         // Verificar que WidgetCheckout esté disponible
-        if (typeof window.WidgetCheckout === 'undefined') {
+        if (typeof WidgetCheckout === 'undefined') {
+            console.error('❌ WidgetCheckout is not defined');
+            console.log('🔍 Checking if Wompi script is loaded...');
+            console.log('Scripts in page:', Array.from(document.scripts).map(s => s.src));
+
             throw new Error('WidgetCheckout no está disponible. Verifica que el script de Wompi esté cargado en index.html');
         }
 
-        console.log('🔧 Creating WidgetCheckout instance...');
-        const checkout = new window.WidgetCheckout({
+        console.log('✅ WidgetCheckout is available');
+        console.log('🔧 Creating WidgetCheckout instance with params:', {
             currency: wompiParams.currency,
             amountInCents: wompiParams.amount_in_cents,
             reference: wompiParams.reference,
             publicKey: wompiParams.public_key,
-            signature: { integrity: wompiParams.signature },
+            hasSignature: !!wompiParams.signature,
+            redirectUrl: wompiParams.redirect_url
+        });
+
+        const checkout = new WidgetCheckout({
+            currency: wompiParams.currency,
+            amountInCents: wompiParams.amount_in_cents,
+            reference: wompiParams.reference,
+            publicKey: wompiParams.public_key,
+            signature: wompiParams.signature ? {
+                integrity: wompiParams.signature.integrity,
+                expirationTime: wompiParams.signature.expiration_time
+            } : undefined,
             redirectUrl: wompiParams.redirect_url,
         });
 
+        console.log('✅ WidgetCheckout instance created successfully');
         console.log('🚀 Opening Wompi Widget...');
+
         checkout.open(function (result) {
             const transaction = result.transaction;
             console.log('💳 Transaction Result:', transaction);
@@ -159,8 +149,17 @@ const openWompiWidget = async (wompiParams, onSuccess, onError) => {
                 });
             }
         });
+
+        console.log('✅ Widget opened successfully');
+
     } catch (error) {
         console.error('❌ Error en Widget:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            wompiParams: wompiParams
+        });
+
         Swal.fire({
             title: 'Error',
             text: `No se pudo abrir el widget de pago: ${error.message}`,
@@ -175,12 +174,12 @@ const openWompiWidget = async (wompiParams, onSuccess, onError) => {
 /**
  * Redirige a la página web de Wompi (pago externo)
  */
-const openWompiWeb = (wompiParams) => {
+const openWompiWeb = async (wompiParams) => {
     try {
         console.log('🌐 Redirecting to Wompi Web Checkout...');
         console.log('📦 Wompi Params for Web:', wompiParams);
 
-        // Validar parámetros requeridos
+        // Validar parámetros requeridos (coincidiendo con test_wompi.html)
         const requiredParams = ['public_key', 'currency', 'amount_in_cents', 'reference', 'signature', 'redirect_url'];
         const missingParams = requiredParams.filter(param => !wompiParams[param]);
 
@@ -196,39 +195,69 @@ const openWompiWeb = (wompiParams) => {
             return;
         }
 
-        console.log('📝 Creating form for Wompi Web Checkout...');
-        // Crear formulario para POST
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'https://checkout.wompi.co/p/';
+        console.log('📝 Creating URL for Wompi Web Checkout (GET)...');
 
-        const params = {
-            'public-key': wompiParams.public_key,
-            'currency': wompiParams.currency,
-            'amount-in-cents': wompiParams.amount_in_cents,
-            'reference': wompiParams.reference,
-            'signature:integrity': wompiParams.signature,
-            'redirect-url': wompiParams.redirect_url
-        };
+        // Prepare URL parameters - EXACTLY as in test_wompi.html
+        // Using snake-case keys as expected by Wompi's GET endpoint
+        const queryParams = new URLSearchParams({
+            'public-key': String(wompiParams.public_key || '').trim(),
+            'currency': String(wompiParams.currency || '').trim(),
+            'amount-in-cents': String(wompiParams.amount_in_cents || '').trim(),
+            'reference': String(wompiParams.reference || '').trim(),
+            'redirect-url': String(wompiParams.redirect_url || '').trim()
+        });
 
-        console.log('📋 Form params:', params);
+        // Add signature parameters
+        // NOTE: Backend returns 'expiration_time', Wompi expects 'signature:timestamp'
+        if (wompiParams.signature) {
+            queryParams.append('signature:integrity', String(wompiParams.signature.integrity || '').trim());
 
-        for (const key in params) {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = key;
-            input.value = params[key];
-            form.appendChild(input);
+            // Handle both potential key names (expiration_time from backend, or expirationTime if changed)
+            const timestamp = wompiParams.signature.expiration_time || wompiParams.signature.expirationTime;
+            queryParams.append('signature:timestamp', String(timestamp || '').trim());
         }
 
-        document.body.appendChild(form);
-        console.log('🚀 Submitting form to Wompi...');
-        form.submit();
+        const checkoutUrl = `https://checkout.wompi.co/p/?${queryParams.toString()}`;
+
+        console.log('🌐 Generated URL:', checkoutUrl);
+
+        // Copiar al portapapeles automáticamente
+        try {
+            await navigator.clipboard.writeText(checkoutUrl);
+        } catch (err) {
+            console.warn('Could not copy to clipboard', err);
+        }
+
+        // Mostrar alerta con la URL (Similar a test_wompi.html payWithURL)
+        const confirmResult = await Swal.fire({
+            title: 'URL Generada (Copiada)',
+            text: 'Hemos generado tu enlace de pago seguro.',
+            input: 'text',
+            inputValue: checkoutUrl,
+            inputAttributes: {
+                readonly: true
+            },
+            icon: 'success',
+            showCancelButton: true,
+            confirmButtonText: '🚀 Ir a Pagar',
+            cancelButtonText: 'Cerrar',
+            background: '#151E32',
+            color: '#fff',
+            customClass: {
+                input: 'text-slate-900 font-mono text-sm'
+            }
+        });
+
+        if (confirmResult.isConfirmed) {
+            // Abrir en nueva pestaña para evitar bloqueos y mantener la app abierta
+            window.open(checkoutUrl, '_blank');
+        }
+
     } catch (error) {
         console.error('❌ Error en Web Checkout:', error);
         Swal.fire({
             title: 'Error',
-            text: `No se pudo redirigir a Wompi: ${error.message}`,
+            text: `No se pudo generar el enlace: ${error.message}`,
             icon: 'error',
             background: '#151E32',
             color: '#fff'

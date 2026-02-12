@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Wompi Standalone</title>
+    <!-- Script de Wompi -->
+    <script src="https://checkout.wompi.co/widget.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-slate-800 p-8 rounded-xl border border-slate-700 max-w-lg w-full shadow-2xl">
+        <h1 class="text-2xl font-bold mb-6 text-cyan-400 text-center">🧪 Configuración de Prueba Wompi</h1>
+
+        <div id="status" class="mb-4 text-center p-2 rounded bg-slate-700 text-xs font-mono">
+            Cargando scripts...
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Public Key</label>
+                <input type="text" id="publicKey" value="pub_test_KIH6JBj99ikrE18K8Ho7lA29CPZ1eUaN"
+                    class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm font-mono text-green-400"
+                    placeholder="pub_test_...">
+            </div>
+
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Integrity Secret (NO compartir en prod)</label>
+                <input type="text" id="integritySecret" value="test_integrity_Iw7cdhZnxTMBHJd7d9NJawLoDJXwUuZF"
+                    class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm font-mono text-yellow-400">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Monto (Centavos)</label>
+                    <input type="number" id="amount" value="5000000"
+                        class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Moneda</label>
+                    <input type="text" id="currency" value="COP"
+                        class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm font-mono"
+                        readonly>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Referencia</label>
+                <div class="flex gap-2">
+                    <input type="text" id="reference"
+                        class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm font-mono text-blue-400"
+                        readonly>
+                    <button onclick="generateReference()"
+                        class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-xs select-none">🔄</button>
+                </div>
+            </div>
+
+            <div class="pt-4 flex flex-col gap-3">
+                <button onclick="payWithWidget()"
+                    class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2">
+                    <span>🟦</span> Pagar con Widget
+                </button>
+
+                <button onclick="payWithWeb()"
+                    class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2">
+                    <span>🟪</span> Pagar con Web Checkout (POST)
+                </button>
+
+                <button onclick="payWithURL()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2">
+                    <span>🔗</span> Generar URL (GET)
+                </button>
+            </div>
+        </div>
+
+        <div id="logs" class="mt-6 p-4 bg-black rounded font-mono text-xs text-green-500 h-40 overflow-y-auto hidden">
+        </div>
+    </div>
+
+    <script>
+        // Check script loading immediately
+        window.addEventListener('load', () => {
+            const statusDiv = document.getElementById('status');
+            if (typeof WidgetCheckout !== 'undefined') {
+                statusDiv.innerHTML = '✅ WidgetCheckout detectado (Global)';
+                statusDiv.classList.add('text-green-400');
+            } else if (typeof window.WidgetCheckout !== 'undefined') {
+                statusDiv.innerHTML = '✅ WidgetCheckout detectado (Window)';
+                statusDiv.classList.add('text-green-400');
+            } else {
+                statusDiv.innerHTML = '❌ WidgetCheckout NO detectado';
+                statusDiv.classList.add('text-red-400');
+                log('❌ Error crítico: El script de Wompi no cargó WidgetCheckout');
+            }
+        });
+
+        // Generar referencia inicial
+        generateReference();
+
+        function generateReference() {
+            const ref = 'TEST-' + Math.floor(Math.random() * 1000000) + '-' + Date.now();
+            document.getElementById('reference').value = ref;
+            log('🔄 Nueva referencia generada: ' + ref);
+        }
+
+        function log(msg) {
+            const logs = document.getElementById('logs');
+            logs.classList.remove('hidden');
+            const entry = document.createElement('div');
+            entry.textContent = `> ${msg}`;
+            logs.appendChild(entry);
+            logs.scrollTop = logs.scrollHeight;
+            console.log(msg);
+        }
+
+        async function generateSignature(reference, amount, currency, secret) {
+            const expirationTime = Math.floor(Date.now() / 1000) + 600;
+            const signatureString = `${reference}${amount}${currency}${expirationTime}${secret}`;
+
+            log(`🔐 Generando firma...`);
+            log(`📝 String: ${reference} + ${amount} + ${currency} + ${expirationTime} + [SECRET]`);
+
+            const msgBuffer = new TextEncoder().encode(signatureString);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+            log(`🔑 Hash generado: ${hashHex}`);
+            log(`⏳ Expiración: ${expirationTime}`);
+
+            return {
+                integrity: hashHex,
+                expirationTime: expirationTime
+            };
+        }
+
+        async function getParams() {
+            // TRIM inputs to avoid hidden characters
+            const publicKey = document.getElementById('publicKey').value.trim();
+            const integritySecret = document.getElementById('integritySecret').value.trim();
+            const amount = document.getElementById('amount').value.trim();
+            const currency = document.getElementById('currency').value.trim();
+            const reference = document.getElementById('reference').value.trim();
+
+            if (!publicKey) {
+                log('❌ Error: Public Key vacía');
+                throw new Error('Public Key es obligatoria');
+            }
+
+            const signatureConfig = await generateSignature(reference, amount, currency, integritySecret);
+
+            return {
+                currency,
+                amountInCents: amount,
+                reference,
+                publicKey,
+                signature: signatureConfig,
+                redirectUrl: window.location.href
+            };
+        }
+
+        async function payWithWidget() {
+            try {
+                const params = await getParams();
+
+                log('🚀 Iniciando Widget...');
+                log(`🔑 Key: '${params.publicKey}' (Length: ${params.publicKey.length})`);
+
+                // Detección robusta de la clase
+                let CheckoutClass = undefined;
+
+                if (typeof WidgetCheckout !== 'undefined') {
+                    CheckoutClass = WidgetCheckout;
+                    log('✅ Usando WidgetCheckout global');
+                } else if (typeof window.WidgetCheckout !== 'undefined') {
+                    CheckoutClass = window.WidgetCheckout;
+                    log('✅ Usando window.WidgetCheckout');
+                } else {
+                    throw new Error('La clase WidgetCheckout no está definida. El script de Wompi falló al cargar.');
+                }
+
+                const checkout = new CheckoutClass({
+                    currency: params.currency,
+                    amountInCents: params.amountInCents,
+                    reference: params.reference,
+                    publicKey: params.publicKey,
+                    redirectUrl: params.redirectUrl,
+                    signature: {
+                        integrity: params.signature.integrity,
+                        expirationTime: params.signature.expirationTime
+                    }
+                });
+
+                checkout.open(function (result) {
+                    const transaction = result.transaction;
+                    log('💳 Resultado transacción: ' + transaction.status);
+
+                    if (transaction.status === 'APPROVED') {
+                        Swal.fire('¡Pago Aprobado!', transaction.id, 'success');
+                    } else {
+                        Swal.fire('Estado: ' + transaction.status, transaction.status_message, 'info');
+                    }
+                });
+
+            } catch (error) {
+                log('❌ Error Widget: ' + error.message);
+                Swal.fire('Error Widget', error.message, 'error');
+            }
+        }
+
+        async function payWithWeb() {
+            try {
+                const params = await getParams();
+                log('🌐 Preparando Web Checkout...');
+
+                // Datos a enviar
+                const formParams = {
+                    'public-key': params.publicKey,
+                    'currency': params.currency,
+                    'amount-in-cents': params.amountInCents,
+                    'reference': params.reference,
+                    'signature:integrity': params.signature.integrity,
+                    'signature:timestamp': params.signature.expirationTime,
+                    'redirect-url': params.redirectUrl
+                };
+
+                // Formatear para mostrar
+                const dataString = JSON.stringify(formParams, null, 2);
+                log('📋 Datos generados:');
+                log(dataString);
+
+                // Copiar al portapapeles
+                await navigator.clipboard.writeText(dataString);
+
+                // Mostrar alerta antes de enviar
+                const confirm = await Swal.fire({
+                    title: 'Datos copiados al portapapeles',
+                    html: `<pre class="text-left text-xs bg-gray-100 p-2 rounded overflow-auto h-48">${dataString}</pre>`,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonText: '🚀 Enviar a Wompi',
+                    cancelButtonText: 'Cancelar'
+                });
+
+                if (confirm.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = 'https://checkout.wompi.co/p/';
+
+                    for (const key in formParams) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = formParams[key];
+                        form.appendChild(input);
+                    }
+
+                    document.body.appendChild(form);
+                    log('🚀 Enviando formulario...');
+                    form.submit();
+                } else {
+                    log('🛑 Envío cancelado por usuario');
+                }
+
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+
+        async function payWithURL() {
+            try {
+                const params = await getParams();
+                log('🔗 Generando URL GET...');
+
+                const queryParams = new URLSearchParams({
+                    'public-key': params.publicKey,
+                    'currency': params.currency,
+                    'amount-in-cents': params.amountInCents,
+                    'reference': params.reference,
+                    'signature:integrity': params.signature.integrity,
+                    'signature:timestamp': params.signature.expirationTime,
+                    'redirect-url': params.redirectUrl
+                });
+
+                const url = `https://checkout.wompi.co/p/?${queryParams.toString()}`;
+
+                log('🌐 URL generada:');
+                log(url);
+
+                // Copiar
+                await navigator.clipboard.writeText(url);
+
+                const confirm = await Swal.fire({
+                    title: 'URL Generada (Copiada)',
+                    text: 'Abre esta URL en una nueva pestaña para probar si carga.',
+                    input: 'text',
+                    inputValue: url,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: '🚀 Abrir ahora',
+                    cancelButtonText: 'Cerrar'
+                });
+
+                if (confirm.isConfirmed) {
+                    window.open(url, '_blank');
+                }
+
+            } catch (error) {
+                log('❌ Error URL: ' + error.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

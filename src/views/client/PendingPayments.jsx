@@ -4,6 +4,7 @@ import { CreditCard, Eye, Calendar, AlertCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Price from '../../components/ui/Price';
 import { useNavigate } from 'react-router-dom';
+import { openWompiPayment } from '../../utils/wompiHelper';
 
 export default function PendingPayments() {
     const [orders, setOrders] = useState([]);
@@ -74,7 +75,7 @@ export default function PendingPayments() {
     const handlePay = async (order) => {
         try {
             Swal.fire({
-                title: 'Iniciando...',
+                title: 'Iniciando Pasarela...',
                 text: 'Por favor espera',
                 allowOutsideClick: false,
                 didOpen: () => {
@@ -87,88 +88,16 @@ export default function PendingPayments() {
             const PaymentService = (await import('../../services/PaymentService')).default;
             const wompiParams = await PaymentService.initWompiTransaction(order.id);
 
-            console.log('🔍 Wompi Params Received:', wompiParams);
+            console.log('🔐 Wompi Params:', wompiParams);
 
+            // Close loading
             Swal.close();
 
-            // Validate Params
-            const requiredParams = ['public_key', 'currency', 'amount_in_cents', 'reference', 'redirect_url'];
-            const missingParams = requiredParams.filter(param => !wompiParams[param]);
-
-            if (missingParams.length > 0) {
-                console.error('❌ Missing Wompi Params:', missingParams);
-                Swal.fire({
-                    title: 'Error de Configuración',
-                    text: `Faltan parámetros de pago: ${missingParams.join(', ')}`,
-                    icon: 'error',
-                    background: '#151E32',
-                    color: '#fff'
-                });
-                return;
-            }
-
-            // Detect environment
-            const isLocalhost = window.location.hostname === 'localhost' ||
-                window.location.hostname === '127.0.0.1';
-
-            console.log(`🌍 Environment: ${isLocalhost ? 'LOCALHOST (Widget will try but may fail due to CloudFront)' : 'PRODUCTION'}`);
-
-            // PRODUCTION: Use Widget (should work with real domain)
-            // LOCALHOST: Try Widget (will fail with 403, but code is ready for production)
-
-            // Load Wompi Widget Script
-            if (!document.getElementById('wompi-widget-script')) {
-                console.log('📦 Loading Wompi Widget script...');
-                const script = document.createElement('script');
-                script.src = 'https://checkout.wompi.co/widget.js';
-                script.id = 'wompi-widget-script';
-                script.async = true;
-                document.body.appendChild(script);
-
-                await new Promise((resolve, reject) => {
-                    script.onload = () => {
-                        console.log('✅ Wompi Widget script loaded');
-                        resolve();
-                    };
-                    script.onerror = () => {
-                        console.error('❌ Failed to load Wompi Widget script');
-                        reject(new Error('Failed to load Wompi Widget'));
-                    };
-                });
-            }
-
-            // Initialize Widget
-            console.log('🚀 Initializing Wompi Widget...');
-            console.log('� Widget Config:', {
-                currency: wompiParams.currency,
-                amountInCents: wompiParams.amount_in_cents,
-                reference: wompiParams.reference,
-                publicKey: wompiParams.public_key,
-                redirectUrl: wompiParams.redirect_url
-            });
-
-            const checkout = new window.WidgetCheckout({
-                currency: wompiParams.currency,
-                amountInCents: wompiParams.amount_in_cents,
-                reference: wompiParams.reference,
-                publicKey: wompiParams.public_key,
-                redirectUrl: wompiParams.redirect_url
-                // Signature is optional in test mode
-                // For production with signature: signature: { integrity: wompiParams.signature }
-            });
-
-            console.log('✅ Widget initialized, opening...');
-
-            if (isLocalhost) {
-                console.warn('⚠️ LOCALHOST DETECTED: Widget may fail with 403 due to CloudFront blocking localhost.');
-                console.warn('⚠️ Deploy to production with a real domain to test Wompi properly.');
-            }
-
-            checkout.open(function (result) {
-                console.log('💳 Widget closed with result:', result);
-                const transaction = result.transaction;
-
-                if (transaction.status === 'APPROVED') {
+            // Use the centralized Wompi helper (handles localhost detection automatically)
+            await openWompiPayment(
+                wompiParams,
+                // onSuccess callback
+                (transaction) => {
                     Swal.fire({
                         title: '¡Pago Exitoso!',
                         text: `Transacción aprobada: ${transaction.id}`,
@@ -178,27 +107,22 @@ export default function PendingPayments() {
                     }).then(() => {
                         fetchPendingOrders(); // Refresh orders list
                     });
-                } else if (transaction.status === 'DECLINED') {
+                },
+                // onError callback
+                (error) => {
+                    console.error('Wompi Payment Error:', error);
                     Swal.fire({
-                        title: 'Pago Rechazado',
-                        text: 'Tu banco ha rechazado la transacción.',
+                        title: 'Error de Pago',
+                        text: 'No se pudo procesar el pago. Por favor intenta nuevamente.',
                         icon: 'error',
                         background: '#151E32',
                         color: '#fff'
                     });
-                } else {
-                    Swal.fire({
-                        title: 'Pago No Completado',
-                        text: `Estado: ${transaction.status}`,
-                        icon: 'warning',
-                        background: '#151E32',
-                        color: '#fff'
-                    });
                 }
-            });
+            );
 
         } catch (error) {
-            console.error(error);
+            console.error('Error:', error);
             Swal.fire({
                 title: 'Error',
                 text: 'No se pudo iniciar el pago.',

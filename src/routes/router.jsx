@@ -24,6 +24,7 @@ import ClientDashboard from '../views/client/ClientDashboard';
 import ClientOrders from '../views/client/ClientOrders';
 import ClientFavorites from '../views/client/ClientFavorites';
 import PendingPayments from '../views/client/PendingPayments'; // Route for pending payments
+import GraciasPorTuCompra from '../views/client/GraciasPorTuCompra';
 
 // Simple Role Guard
 const RoleGuard = ({ children, allowedRoles }) => {
@@ -173,6 +174,10 @@ const router = createBrowserRouter([
                 path: 'pending-payments',
                 element: <PendingPayments />,
                 errorElement: <div className="text-white p-10">Error loading Pending Payments View</div>
+            },
+            {
+                path: 'gracias',
+                element: <GraciasPorTuCompra />
             },
             {
                 path: 'favorites',
