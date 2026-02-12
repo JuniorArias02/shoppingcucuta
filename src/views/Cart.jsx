@@ -5,6 +5,7 @@ import Price from '../components/ui/Price';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/AuthContext';
 import Swal from 'sweetalert2';
+import { openWompiPayment } from '../utils/wompiHelper';
 
 export default function Cart() {
     const { user } = useAuth();
@@ -170,171 +171,40 @@ export default function Cart() {
                 const OrderService = (await import('../services/OrderService')).default;
                 const response = await OrderService.createOrder(formValues);
 
+
                 if (formValues.metodo_pago === 'wompi') {
                     // Start Wompi Flow
                     try {
                         const PaymentService = (await import('../services/PaymentService')).default;
                         const wompiParams = await PaymentService.initWompiTransaction(response.pedido.id);
 
-                        // Load Widget
-                        if (!document.getElementById('wompi-widget-script')) {
-                            const script = document.createElement('script');
-                            script.src = 'https://checkout.wompi.co/widget.js';
-                            script.id = 'wompi-widget-script';
-                            script.async = true;
-                            document.body.appendChild(script);
-
-                            await new Promise((resolve, reject) => {
-                                script.onload = resolve;
-                                script.onerror = reject;
-                            });
-                        }
+                        console.log('🔐 Wompi Params:', wompiParams);
 
                         // Close Swal loading
                         Swal.close();
 
-                        // Ask User for Preference (Widget vs Web)
-                        const { value: preference } = await Swal.fire({
-                            title: '<strong class="text-white text-xl">¿Cómo prefieres pagar?</strong>',
-                            html: `
-                                <div class="flex flex-col gap-4 mt-4">
-                                    <button id="btn-widget" class="group relative flex items-center gap-4 p-4 rounded-xl bg-sc-navy border border-white/10 hover:border-sc-cyan/50 transition-all hover:bg-white/5 text-left">
-                                        <div class="bg-sc-cyan/10 p-3 rounded-full text-sc-cyan group-hover:scale-110 transition-transform">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-bold text-white text-lg">En esta web</h4>
-                                            <p class="text-sm text-slate-400">Paga sin salir de Venezia Pizzas (Widget).</p>
-                                        </div>
-                                    </button>
-
-                                    <button id="btn-web" class="group relative flex items-center gap-4 p-4 rounded-xl bg-sc-navy border border-white/10 hover:border-sc-magenta/50 transition-all hover:bg-white/5 text-left">
-                                        <div class="bg-sc-magenta/10 p-3 rounded-full text-sc-magenta group-hover:scale-110 transition-transform">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-bold text-white text-lg">Ir a Wompi</h4>
-                                            <p class="text-sm text-slate-400">Paga en la página segura de Wompi.</p>
-                                        </div>
-                                    </button>
-                                </div>
-                            `,
-                            showConfirmButton: false,
-                            showCancelButton: true,
-                            cancelButtonText: 'Cancelar',
-                            background: '#151E32',
-                            color: '#fff',
-                            width: 500,
-                            didOpen: () => {
-                                document.getElementById('btn-widget').addEventListener('click', () => Swal.clickConfirm());
-                                document.getElementById('btn-web').addEventListener('click', () => Swal.clickDeny());
-                            }
-                        });
-
-
-                        if (preference === true) { // Widget Selected (Confirm)
-                            // Load Widget Logic
-                            if (!document.getElementById('wompi-widget-script')) {
-                                const script = document.createElement('script');
-                                script.src = 'https://checkout.wompi.co/widget.js';
-                                script.id = 'wompi-widget-script';
-                                script.async = true;
-                                document.body.appendChild(script);
-
-                                await new Promise((resolve, reject) => {
-                                    script.onload = resolve;
-                                    script.onerror = reject;
-                                });
-                            }
-
-                            const checkout = new window.WidgetCheckout({
-                                currency: wompiParams.currency,
-                                amountInCents: wompiParams.amount_in_cents,
-                                reference: wompiParams.reference,
-                                publicKey: wompiParams.public_key,
-                                signature: { integrity: wompiParams.signature },
-                                redirectUrl: wompiParams.redirect_url,
-                            });
-
-                            checkout.open(function (result) {
-                                const transaction = result.transaction;
-                                console.log('Transaction:', transaction);
-                                if (transaction.status === 'APPROVED') {
-                                    setItems([]);
-                                    Swal.fire({
-                                        title: '¡Pago Exitoso!',
-                                        text: `Transacción aprobada: ${transaction.id}`,
-                                        icon: 'success',
-                                        background: '#151E32',
-                                        color: '#fff'
-                                    }).then(() => {
-                                        navigate('/client/orders');
-                                    });
-                                } else if (transaction.status === 'DECLINED') {
-                                    Swal.fire({
-                                        title: 'Pago Rechazado',
-                                        text: 'Tu banco ha rechazado la transacción.',
-                                        icon: 'error',
-                                        background: '#151E32',
-                                        color: '#fff'
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        title: 'Transacción Finalizada',
-                                        text: `Estado: ${transaction.status}`,
-                                        icon: 'info',
-                                        background: '#151E32',
-                                        color: '#fff'
-                                    }).then(() => {
-                                        navigate('/client/orders');
-                                    });
-                                }
-                            });
-
-                        } else if (preference === false) { // Web Selected
-                            setItems([]);
-
-                            // Validate Params
-                            const requiredParams = ['public_key', 'currency', 'amount_in_cents', 'reference', 'signature', 'redirect_url'];
-                            const missingParams = requiredParams.filter(param => !wompiParams[param]);
-
-                            if (missingParams.length > 0) {
-                                console.error('Missing Wompi Params:', missingParams);
+                        // Open Wompi Payment Modal (Widget or Web)
+                        await openWompiPayment(
+                            wompiParams,
+                            // onSuccess callback
+                            (transaction) => {
+                                setItems([]); // Clear cart
+                                navigate('/client/orders');
+                            },
+                            // onError callback
+                            (error) => {
+                                console.error('Wompi Payment Error:', error);
                                 Swal.fire({
-                                    title: 'Error de Configuración',
-                                    text: `Faltan parámetros de pago: ${missingParams.join(', ')}`,
+                                    title: 'Error de Pago',
+                                    text: 'No se pudo iniciar la pasarela de pagos. Por favor intenta nuevamente desde "Mis Pedidos".',
                                     icon: 'error',
                                     background: '#151E32',
                                     color: '#fff'
+                                }).then(() => {
+                                    navigate('/client/orders');
                                 });
-                                return;
                             }
-
-                            // Create Form for POST request
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.action = 'https://checkout.wompi.co/p/';
-
-                            const params = {
-                                'public-key': wompiParams.public_key,
-                                'currency': wompiParams.currency,
-                                'amount-in-cents': wompiParams.amount_in_cents,
-                                'reference': wompiParams.reference,
-                                'signature:integrity': wompiParams.signature, // Key name for POST
-                                'redirect-url': wompiParams.redirect_url
-                            };
-
-                            for (const key in params) {
-                                const input = document.createElement('input');
-                                input.type = 'hidden';
-                                input.name = key;
-                                input.value = params[key];
-                                form.appendChild(input);
-                            }
-
-                            document.body.appendChild(form);
-                            form.submit();
-                        }
+                        );
 
                     } catch (wompiError) {
                         console.error('Wompi Error:', wompiError);
@@ -415,6 +285,66 @@ export default function Cart() {
     const subtotal = items.reduce((acc, item) => acc + (item.precio_unitario * item.cantidad), 0);
     const shipping = 0; // Free for now
     const total = subtotal + shipping;
+
+    // Loading Skeleton
+    if (loading) {
+        return (
+            <div className="max-w-6xl mx-auto py-6">
+                <h1 className="text-3xl font-bold mb-8 text-white flex items-center gap-3">
+                    Tu Carrito <span className="text-lg font-normal text-slate-400 bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/5 animate-pulse">...</span>
+                </h1>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Skeleton Cart Items */}
+                    <div className="lg:col-span-2 space-y-4">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-sc-navy-card/80 backdrop-blur-md p-5 rounded-2xl border border-white/5 flex gap-5 animate-pulse">
+                                {/* Image Skeleton */}
+                                <div className="w-28 h-28 bg-sc-navy rounded-xl flex-shrink-0 border border-white/5"></div>
+
+                                {/* Info Skeleton */}
+                                <div className="flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <div className="h-6 bg-white/10 rounded-lg w-3/4 mb-3"></div>
+                                        <div className="flex gap-2">
+                                            <div className="h-6 bg-white/5 rounded-md w-20"></div>
+                                            <div className="h-6 bg-white/5 rounded-md w-20"></div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-end mt-4">
+                                        <div className="h-8 bg-white/10 rounded-lg w-24"></div>
+                                        <div className="h-10 bg-sc-navy rounded-xl w-32"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Skeleton Summary */}
+                    <div className="space-y-6">
+                        <div className="bg-sc-navy-card/80 backdrop-blur-md p-6 rounded-2xl border border-white/5 sticky top-24 shadow-xl animate-pulse">
+                            <div className="h-6 bg-white/10 rounded-lg w-1/2 mb-6"></div>
+                            <div className="space-y-3 pb-6 border-b border-white/10">
+                                <div className="flex justify-between">
+                                    <div className="h-4 bg-white/5 rounded w-20"></div>
+                                    <div className="h-4 bg-white/5 rounded w-24"></div>
+                                </div>
+                                <div className="flex justify-between">
+                                    <div className="h-4 bg-white/5 rounded w-16"></div>
+                                    <div className="h-4 bg-white/5 rounded w-16"></div>
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center py-6">
+                                <div className="h-8 bg-white/10 rounded-lg w-20"></div>
+                                <div className="h-8 bg-white/10 rounded-lg w-28"></div>
+                            </div>
+                            <div className="h-12 bg-white/10 rounded-xl w-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (items.length === 0) {
         return (

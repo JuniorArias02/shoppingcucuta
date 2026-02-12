@@ -19,7 +19,7 @@ export default function Price({ price, discountPercent = 0, size = "md" }) {
     };
 
     return (
-        <div className="flex items-baseline gap-2">
+        <span className="inline-flex items-baseline gap-2">
             <span className={`font-bold text-white group-hover:text-sc-cyan transition-colors ${sizeClasses[size]}`}>
                 {formattedPrice}
             </span>
@@ -28,6 +28,6 @@ export default function Price({ price, discountPercent = 0, size = "md" }) {
                     {originalPrice}
                 </span>
             )}
-        </div>
+        </span>
     );
 }
