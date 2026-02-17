@@ -107,7 +107,7 @@ const openWompiWidget = async (wompiParams, onSuccess, onError) => {
             publicKey: wompiParams.public_key,
             signature: wompiParams.signature ? {
                 integrity: wompiParams.signature.integrity,
-                expirationTime: wompiParams.signature.expiration_time
+                ...(wompiParams.signature.expiration_time && { expirationTime: wompiParams.signature.expiration_time })
             } : undefined,
             redirectUrl: wompiParams.redirect_url,
         });

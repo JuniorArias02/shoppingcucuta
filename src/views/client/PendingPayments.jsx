@@ -93,7 +93,7 @@ export default function PendingPayments() {
             // Close loading
             Swal.close();
 
-            // Use the centralized Wompi helper (handles localhost detection automatically)
+            
             await openWompiPayment(
                 wompiParams,
                 // onSuccess callback
