@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ProductService from '../services/ProductService';
 import Price from '../components/ui/Price';
-import { ChevronLeft, Heart, Share2, ShieldCheck, Truck, ShoppingCart, Star } from 'lucide-react';
+import { ChevronLeft, Heart, Share2, ShieldCheck, Truck, ShoppingCart, Star, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import AuthService from '../services/AuthService';
 import { useCart } from '../store/CartContext';
@@ -20,6 +20,7 @@ export default function ProductDetail() {
     const [quantity, setQuantity] = useState(1);
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(0);
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -182,6 +183,7 @@ export default function ProductDetail() {
 
         if (!activeVariant || activeVariant.stock <= 0) return;
 
+        setIsAddingToCart(true);
         try {
             await addToCart(activeVariant.id, quantity);
 
@@ -204,6 +206,8 @@ export default function ProductDetail() {
                 background: '#151E32',
                 color: '#fff'
             });
+        } finally {
+            setIsAddingToCart(false);
         }
     };
 
@@ -427,13 +431,19 @@ export default function ProductDetail() {
                             {/* Add Button */}
                             <button
                                 onClick={handleAddToCart}
-                                disabled={!activeVariant || currentStock <= 0}
-                                className="flex-1 bg-gradient-to-r from-sc-magenta to-purple-600 hover:to-purple-500 text-white font-bold rounded-2xl shadow-xl shadow-sc-magenta/25 hover:shadow-sc-magenta/40 hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-3 group"
+                                disabled={!activeVariant || currentStock <= 0 || isAddingToCart}
+                                className="flex-1 bg-gradient-to-r from-sc-magenta to-purple-600 hover:to-purple-500 text-white font-bold rounded-2xl shadow-xl shadow-sc-magenta/25 hover:shadow-sc-magenta/40 hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-3 group relative overflow-hidden"
                             >
                                 <div className="p-1.5 bg-white/20 rounded-lg group-hover:scale-110 transition-transform">
-                                    <ShoppingCart size={20} className="fill-current" />
+                                    {isAddingToCart ? (
+                                        <Loader2 size={20} className="animate-spin" />
+                                    ) : (
+                                        <ShoppingCart size={20} className="fill-current" />
+                                    )}
                                 </div>
-                                <span>Agregar al Carrito</span>
+                                <span className="relative z-10">
+                                    {isAddingToCart ? 'Agregando...' : 'Agregar al Carrito'}
+                                </span>
                             </button>
                         </div>
                     </div>

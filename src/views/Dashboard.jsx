@@ -3,6 +3,7 @@ import { useAuth } from '../store/AuthContext';
 import { Package, CreditCard, Heart, ShoppingBag, Settings, LogOut, ChevronRight, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import OrderService from '../services/OrderService';
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
@@ -12,9 +13,8 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchRecentOrders = async () => {
             try {
-                // Simulación de carga para sentir premium app
-                // const res = await api.get('/orders/my-orders'); 
-                // setRecentOrders(res.data.data.slice(0, 3));
+                const res = await OrderService.getOrders();
+                setRecentOrders((res.data || []).slice(0, 5));
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching orders", error);
@@ -25,10 +25,10 @@ export default function Dashboard() {
     }, []);
 
     const quickActions = [
-        { label: 'Mis Pedidos', icon: ShoppingBag, path: '/client/orders', color: 'bg-sc-magenta' },
-        { label: 'Favoritos', icon: Heart, path: '/client/favorites', color: 'bg-rose-500' },
-        { label: 'Mis Pagos', icon: CreditCard, path: '/client/pending-payments', color: 'bg-sc-cyan' },
-        { label: 'Ajustes', icon: Settings, path: '/client/settings', color: 'bg-sc-purple' },
+        { label: 'Gestionar Logística', icon: ShoppingBag, path: '/admin/orders', color: 'bg-sc-magenta' },
+        { label: 'Finanzas', icon: CreditCard, path: '/admin/finances', color: 'bg-emerald-500' },
+        { label: 'Categorías', icon: Package, path: '/admin/categories', color: 'bg-sc-cyan' },
+        { label: 'Ajustes', icon: Settings, path: '/admin/settings', color: 'bg-sc-purple' },
     ];
 
     if (loading) {
@@ -61,7 +61,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex gap-3 pt-2">
-                        <Link to="/client/settings" className="px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-300 transition-colors">
+                        <Link to="/admin/settings" className="px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium text-slate-300 transition-colors">
                             Editar Perfil
                         </Link>
                     </div>
@@ -90,14 +90,14 @@ export default function Dashboard() {
             {/* Recent Orders Preview */}
             <div className="bg-sc-navy-card/30 rounded-3xl border border-white/5 overflow-hidden">
                 <div className="p-6 flex items-center justify-between border-b border-white/5">
-                    <h3 className="font-bold text-white text-lg">Actividad Reciente</h3>
-                    <Link to="/client/orders" className="text-sc-cyan text-sm font-semibold hover:text-white transition-colors">Ver todo</Link>
+                    <h3 className="font-bold text-white text-lg">Últimos Envíos</h3>
+                    <Link to="/admin/orders" className="text-sc-cyan text-sm font-semibold hover:text-white transition-colors">Modificar envíos</Link>
                 </div>
 
                 <div className="p-4 space-y-2">
                     {recentOrders.length > 0 ? (
                         recentOrders.map(order => (
-                            <Link key={order.id} to={`/client/orders/${order.id}`} className="flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group">
+                            <Link key={order.id} to={`/admin/orders`} className="flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors group">
                                 <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center">
                                     <ShoppingBag size={20} className="text-slate-400 group-hover:text-white" />
                                 </div>
@@ -106,8 +106,16 @@ export default function Dashboard() {
                                     <p className="text-xs text-slate-500">{order.fecha}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-bold text-sc-cyan text-sm">${order.total}</p>
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Entregado</span>
+                                    <p className="font-bold text-sc-cyan text-sm">${Number(order.total).toLocaleString()}</p>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border ${order.estado === 'entregado' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                        order.estado === 'enviado' ? 'bg-pink-500/10 text-pink-500 border-pink-500/20' :
+                                            order.estado === 'despachado' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                                order.estado === 'pagado' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                                    order.estado === 'visto' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                        'bg-slate-500/10 text-slate-500 border-slate-500/20'
+                                        }`}>
+                                        {order.estado}
+                                    </span>
                                 </div>
                                 <ChevronRight size={16} className="text-slate-600 group-hover:text-white" />
                             </Link>
@@ -117,8 +125,7 @@ export default function Dashboard() {
                             <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-600">
                                 <Package size={32} />
                             </div>
-                            <p className="text-slate-400 text-sm">No tienes pedidos recientes</p>
-                            <Link to="/products" className="text-sc-magenta text-sm font-bold mt-2 inline-block">¡Ir de compras!</Link>
+                            <p className="text-slate-400 text-sm">No hay envíos recientes registrados.</p>
                         </div>
                     )}
                 </div>

@@ -13,6 +13,8 @@ import AdminLayout from '../components/layout/AdminLayout';
 import ProductList from '../views/ProductList';
 import ProductDetailAdmin from '../views/ProductDetailAdmin';
 import Orders from '../views/Orders';
+import CategoriesList from '../views/admin/CategoriesList';
+import Earnings from '../views/admin/Earnings';
 
 import Dashboard from '../views/Dashboard';
 
@@ -141,6 +143,14 @@ const router = createBrowserRouter([
             {
                 path: 'create-product',
                 element: <CreateProduct />
+            },
+            {
+                path: 'categories',
+                element: <CategoriesList />
+            },
+            {
+                path: 'finances',
+                element: <Earnings />
             },
             {
                 path: 'orders',

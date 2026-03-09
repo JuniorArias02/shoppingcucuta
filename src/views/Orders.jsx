@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, Search, Filter, Calendar, Download, X, Package, Truck } from 'lucide-react';
+import { Eye, Search, Filter, Calendar, Download, X, Package, Truck, FileText } from 'lucide-react';
 import OrderService from '../services/OrderService';
 import Swal from 'sweetalert2';
 import { useAuth } from '../store/AuthContext';
@@ -37,9 +37,8 @@ export default function Orders() {
         switch (status) {
             case 'pendiente': return 'bg-amber-500/10 text-amber-500 border border-amber-500/20';
             case 'pagado': return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
-            case 'visto': return 'bg-blue-500/10 text-blue-500 border border-blue-500/20'; // Blue for Visto
-            case 'empacado': return 'bg-purple-500/10 text-purple-500 border border-purple-500/20'; // Purple for Empacado
-            case 'procesando': return 'bg-blue-500/10 text-blue-500 border border-blue-500/20';
+            case 'visto': return 'bg-blue-500/10 text-blue-500 border border-blue-500/20';
+            case 'despachado': return 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'; // Yellow for Despachado
             case 'enviado': return 'bg-pink-500/10 text-pink-500 border border-pink-500/20'; // Pink for Enviado (Brand color)
             case 'entregado': return 'bg-green-500/10 text-green-500 border border-green-500/20';
             case 'cancelado': return 'bg-red-500/10 text-red-500 border border-red-500/20';
@@ -152,9 +151,9 @@ export default function Orders() {
 
     const handleUpdateStatus = async (id, newStatus) => {
         const statusLabels = {
-            'visto': 'Visto (En preparación)',
-            'empacado': 'Empacado',
-            'enviado': 'Enviado',
+            'visto': 'Visto (Preparando)',
+            'despachado': 'Despachado (Al transportista)',
+            'enviado': 'Enviado (En camino)',
             'entregado': 'Entregado'
         };
 
@@ -203,8 +202,8 @@ export default function Orders() {
     const getNextStatusAction = (currentStatus) => {
         switch (currentStatus) {
             case 'pagado': return { label: 'Marcar Visto', icon: Eye, next: 'visto', color: 'text-blue-400 hover:bg-blue-500/10' };
-            case 'visto': return { label: 'Marcar Empacado', icon: Package, next: 'empacado', color: 'text-purple-400 hover:bg-purple-500/10' };
-            case 'empacado': return { label: 'Marcar Enviado', icon: Truck, next: 'enviado', color: 'text-pink-400 hover:bg-pink-500/10' };
+            case 'visto': return { label: 'Marcar Despachado', icon: Package, next: 'despachado', color: 'text-yellow-400 hover:bg-yellow-500/10' };
+            case 'despachado': return { label: 'Marcar Enviado', icon: Truck, next: 'enviado', color: 'text-pink-400 hover:bg-pink-500/10' };
             default: return null;
         }
     };
@@ -230,8 +229,8 @@ export default function Orders() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Pedidos</h1>
-                    <p className="text-slate-400">Gestiona y rastrea el estado de las órdenes.</p>
+                    <h1 className="text-3xl font-bold text-white mb-2">Gestionar Envíos</h1>
+                    <p className="text-slate-400">Gestiona, actualiza el estado logístico de los pedidos y prepara despachos.</p>
                 </div>
                 <button className="flex items-center gap-2 bg-sc-navy-card/80 hover:bg-white/5 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl border border-white/5 transition-all">
                     <Download size={18} />
@@ -318,9 +317,9 @@ export default function Orders() {
                                                 <button
                                                     onClick={() => handleViewOrder(order.id)}
                                                     className="p-2 text-slate-400 hover:text-sc-cyan hover:bg-sc-cyan/10 rounded-lg transition-all"
-                                                    title="Ver Detalles"
+                                                    title="Ver Detalles del Pedido"
                                                 >
-                                                    <Eye size={18} />
+                                                    <FileText size={18} />
                                                 </button>
                                                 {order.estado === 'pendiente' && (
                                                     <button

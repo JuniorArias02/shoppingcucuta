@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../store/AuthContext';
 import Swal from 'sweetalert2';
-import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Eye, EyeOff, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Login() {
@@ -99,6 +99,11 @@ export default function Login() {
                         <div className="pt-2 border-t border-white/5">
                             <Link to="/register" className="text-sm text-slate-400 hover:text-white transition-colors">
                                 ¿No tienes cuenta? <span className="text-sc-magenta font-bold">Crear Cuenta</span>
+                            </Link>
+                        </div>
+                        <div className="pt-2 border-t border-white/5 mt-2">
+                            <Link to="/" className="text-sm text-sc-cyan hover:text-white transition-colors flex items-center justify-center gap-2 font-medium">
+                                <Store size={16} /> Ir a la tienda
                             </Link>
                         </div>
                     </div>

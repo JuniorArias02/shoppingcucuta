@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, PlusCircle, ShoppingBag, LogOut, Home, X, Settings } from 'lucide-react';
+import { LayoutDashboard, Package, PlusCircle, ShoppingBag, LogOut, Home, X, Settings, Tags, CircleDollarSign } from 'lucide-react';
 import { useAuth } from '../../store/AuthContext';
 import Swal from 'sweetalert2';
 
@@ -33,7 +33,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         { path: '/admin/dashboard', label: 'Resumen', icon: LayoutDashboard },
         { path: '/admin/products', label: 'Mis Productos', icon: Package },
         { path: '/admin/create-product', label: 'Crear Producto', icon: PlusCircle },
-        { path: '/admin/orders', label: 'Pedidos', icon: ShoppingBag },
+        { path: '/admin/categories', label: 'Categorías', icon: Tags },
+        { path: '/admin/orders', label: 'Gestionar Envíos', icon: ShoppingBag },
+        { path: '/admin/finances', label: 'Finanzas', icon: CircleDollarSign },
         { path: '/admin/settings', label: 'Configuración', icon: Settings },
     ];
 

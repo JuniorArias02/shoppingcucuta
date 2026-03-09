@@ -93,7 +93,7 @@ export default function PendingPayments() {
             // Close loading
             Swal.close();
 
-            
+
             await openWompiPayment(
                 wompiParams,
                 // onSuccess callback
@@ -113,7 +113,7 @@ export default function PendingPayments() {
                     console.error('Wompi Payment Error:', error);
                     Swal.fire({
                         title: 'Error de Pago',
-                        text: 'No se pudo procesar el pago. Por favor intenta nuevamente.',
+                        text: error?.response?.data?.message || 'No se pudo procesar el pago. Por favor intenta nuevamente.',
                         icon: 'error',
                         background: '#151E32',
                         color: '#fff'
@@ -123,9 +123,11 @@ export default function PendingPayments() {
 
         } catch (error) {
             console.error('Error:', error);
+
+            // Si el backend arrojó error de inventario u otra validación antes de abrir wompi
             Swal.fire({
                 title: 'Error',
-                text: 'No se pudo iniciar el pago.',
+                text: error?.response?.data?.message || 'No se pudo iniciar el pago.',
                 icon: 'error',
                 background: '#151E32',
                 color: '#fff'
