@@ -4,6 +4,9 @@ import ProductService from '../services/ProductService';
 import CategoryService from '../services/CategoryService';
 import ProductCard from '../components/products/ProductCard';
 import { Search, ArrowLeft, Filter, X } from 'lucide-react';
+import { useAuth } from '../store/AuthContext';
+import AgeConfirmationModal from '../components/ui/AgeConfirmationModal';
+import { useNavigate } from 'react-router-dom';
 
 export default function AllProducts() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +20,11 @@ export default function AllProducts() {
     const [selectedCategory, setSelectedCategory] = useState(initialCategory);
     const [searchTerm, setSearchTerm] = useState('');
     const [showFilters, setShowFilters] = useState(false);
+    const { user, confirmAge } = useAuth();
+    const navigate = useNavigate();
+    const [showAgeModal, setShowAgeModal] = useState(false);
+    const [pendingCategoryId, setPendingCategoryId] = useState(null);
+    const [confirmingAge, setConfirmingAge] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -45,7 +53,19 @@ export default function AllProducts() {
     }, [isOfertas]); // Re-fetch when ofertas param changes
 
     useEffect(() => {
-        let result = products;
+        if (loading) return;
+
+        const adultCategoryIds = categories
+            .filter(c => c.nombre.toLowerCase().includes('18'))
+            .map(c => c.id);
+
+        let result = [...products];
+
+        // Hide adult content if not confirmed AND not explicitly viewing an adult category
+        const isAdultCategorySelected = selectedCategory && adultCategoryIds.includes(selectedCategory);
+        if (!user?.mayor_edad && !isAdultCategorySelected) {
+            result = result.filter(p => !adultCategoryIds.includes(p.categoria_id));
+        }
 
         if (selectedCategory) {
             result = result.filter(p => p.categoria_id === selectedCategory);
@@ -61,15 +81,55 @@ export default function AllProducts() {
         }
 
         setFilteredProducts(result);
-    }, [selectedCategory, searchTerm, products]);
+    }, [selectedCategory, searchTerm, products, categories, user?.mayor_edad, loading]);
 
     const handleCategoryClick = (categoryId) => {
+        if (!categoryId) {
+            setSelectedCategory(null);
+            setSearchParams({});
+            return;
+        }
+
+        // Find category to check name
+        const category = categories.find(c => c.id === categoryId);
+        const isAdultCategory = category?.nombre.toLowerCase().includes('18');
+
+        if (isAdultCategory) {
+            if (!user) {
+                navigate('/login');
+                return;
+            }
+
+            if (!user.mayor_edad) {
+                setPendingCategoryId(categoryId);
+                setShowAgeModal(true);
+                return;
+            }
+        }
+
         if (selectedCategory === categoryId) {
             setSelectedCategory(null);
             setSearchParams({});
         } else {
             setSelectedCategory(categoryId);
             setSearchParams({ category: categoryId });
+        }
+    };
+
+    const handleConfirmAge = async () => {
+        setConfirmingAge(true);
+        try {
+            await confirmAge();
+            setShowAgeModal(false);
+            if (pendingCategoryId) {
+                setSelectedCategory(pendingCategoryId);
+                setSearchParams({ category: pendingCategoryId });
+                setPendingCategoryId(null);
+            }
+        } catch (error) {
+            console.error("Error confirming age", error);
+        } finally {
+            setConfirmingAge(false);
         }
     };
 
@@ -184,6 +244,13 @@ export default function AllProducts() {
                     </div>
                 )}
             </div>
+
+            <AgeConfirmationModal
+                isOpen={showAgeModal}
+                onClose={() => setShowAgeModal(false)}
+                onConfirm={handleConfirmAge}
+                loading={confirmingAge}
+            />
         </div>
     );
 }

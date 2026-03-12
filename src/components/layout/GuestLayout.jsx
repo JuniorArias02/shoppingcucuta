@@ -8,9 +8,5 @@ export default function GuestLayout() {
         return <Navigate to="/admin/dashboard" />;
     }
 
-    return (
-        <div className="min-h-screen bg-sc-navy flex items-center justify-center p-4">
-            <Outlet />
-        </div>
-    );
+    return <Outlet />;
 }

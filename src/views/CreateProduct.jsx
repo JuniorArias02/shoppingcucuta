@@ -4,6 +4,7 @@ import CategoryService from '../services/CategoryService';
 import ProductService from '../services/ProductService';
 import Swal from 'sweetalert2';
 import { useNavigate, Link } from 'react-router-dom';
+import { compressImage } from '../utils/imageUtils';
 
 export default function CreateProduct() {
     const navigate = useNavigate();
@@ -59,14 +60,31 @@ export default function CreateProduct() {
         fileInputRef.current.click();
     };
 
-    const handleImageSelect = (e) => {
+    const handleImageSelect = async (e) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
-            const newImages = files.map(file => ({
-                file,
-                preview: URL.createObjectURL(file)
-            }));
-            setImages(prev => [...prev, ...newImages]);
+            
+            // Show loading if possible, or just process
+            const processedImages = await Promise.all(
+                files.map(async (file) => {
+                    try {
+                        // Compress to max 1200px and 0.7 quality
+                        const compressed = await compressImage(file);
+                        return {
+                            file: compressed,
+                            preview: URL.createObjectURL(compressed)
+                        };
+                    } catch (err) {
+                        console.error("Compression failed", err);
+                        return {
+                            file,
+                            preview: URL.createObjectURL(file)
+                        };
+                    }
+                })
+            );
+
+            setImages(prev => [...prev, ...processedImages]);
         }
     };
 

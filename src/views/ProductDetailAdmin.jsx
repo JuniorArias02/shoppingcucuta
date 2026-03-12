@@ -7,6 +7,7 @@ import {
 import ProductService from '../services/ProductService';
 import CategoryService from '../services/CategoryService';
 import Swal from 'sweetalert2';
+import { compressImage } from '../utils/imageUtils';
 
 export default function ProductDetailAdmin() {
     const { id } = useParams();
@@ -94,16 +95,33 @@ export default function ProductDetailAdmin() {
     // Image Handlers
     const handleImageUploadClick = () => fileInputRef.current.click();
 
-    const handleImageSelect = (e) => {
+    const handleImageSelect = async (e) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
-            const newImages = files.map(file => ({
-                id: Date.now() + Math.random(), // Temp ID
-                file,
-                preview: URL.createObjectURL(file),
-                isNew: true
-            }));
-            setImages(prev => [...prev, ...newImages]);
+            
+            const processedImages = await Promise.all(
+                files.map(async (file) => {
+                    try {
+                        const compressed = await compressImage(file);
+                        return {
+                            id: Date.now() + Math.random(),
+                            file: compressed,
+                            preview: URL.createObjectURL(compressed),
+                            isNew: true
+                        };
+                    } catch (err) {
+                        console.error("Compression failed", err);
+                        return {
+                            id: Date.now() + Math.random(),
+                            file,
+                            preview: URL.createObjectURL(file),
+                            isNew: true
+                        };
+                    }
+                })
+            );
+            
+            setImages(prev => [...prev, ...processedImages]);
         }
     };
 

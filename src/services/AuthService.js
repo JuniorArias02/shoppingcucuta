@@ -66,6 +66,15 @@ class AuthService {
             return null;
         }
     }
+
+    async confirmAge() {
+        const response = await api.post('/confirm-age');
+        if (response.data.user) {
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            window.dispatchEvent(new Event('storage'));
+        }
+        return response.data;
+    }
 }
 
 export default new AuthService();

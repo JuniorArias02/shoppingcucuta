@@ -34,6 +34,14 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const confirmAge = async () => {
+        const data = await AuthService.confirmAge();
+        if (data.user) {
+            setUser(data.user);
+        }
+        return data;
+    };
+
     // Función para manejar la inactividad
     const handleInactivity = () => {
         console.log('🔒 Cerrando sesión por inactividad...');
@@ -58,7 +66,7 @@ export const AuthProvider = ({ children }) => {
     );
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
+        <AuthContext.Provider value={{ user, login, logout, loading, updateUser, confirmAge }}>
             {!loading && children}
         </AuthContext.Provider>
     );

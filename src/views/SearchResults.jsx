@@ -3,33 +3,55 @@ import { useSearchParams, Link } from 'react-router-dom';
 import ProductService from '../services/ProductService';
 import ProductCard from '../components/products/ProductCard';
 import { Search, ArrowRight } from 'lucide-react';
+import { useAuth } from '../store/AuthContext';
+import CategoryService from '../services/CategoryService';
 
 export default function SearchResults() {
     const [searchParams] = useSearchParams();
     const query = searchParams.get('q') || '';
     const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
     useEffect(() => {
-        const fetchResults = async () => {
+        const fetchData = async () => {
             setLoading(true);
             try {
-                const response = await ProductService.getAll({ search: query });
-                setProducts(response.data?.length !== undefined ? response.data : (Array.isArray(response) ? response : []));
+                const [productsData, categoriesData] = await Promise.all([
+                    ProductService.getAll({ search: query }),
+                    CategoryService.getAll()
+                ]);
+
+                const prods = productsData.data?.length !== undefined ? productsData.data : (Array.isArray(productsData) ? productsData : []);
+                const cats = Array.isArray(categoriesData) ? categoriesData : (categoriesData.data || []);
+                
+                setCategories(cats);
+
+                // Filter out adult content if not confirmed
+                if (!user?.mayor_edad) {
+                    const adultCategoryIds = cats
+                        .filter(c => c.nombre.toLowerCase().includes('18'))
+                        .map(c => c.id);
+                    
+                    setProducts(prods.filter(p => !adultCategoryIds.includes(p.categoria_id)));
+                } else {
+                    setProducts(prods);
+                }
             } catch (error) {
-                console.error("Error searching products", error);
+                console.error("Error fetching results", error);
             } finally {
                 setLoading(false);
             }
         };
 
         if (query) {
-            fetchResults();
+            fetchData();
         } else {
             setProducts([]);
             setLoading(false);
         }
-    }, [query]);
+    }, [query, user?.mayor_edad]);
 
     if (loading) {
         return (
