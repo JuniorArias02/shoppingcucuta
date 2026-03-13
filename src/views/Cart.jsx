@@ -99,7 +99,10 @@ export default function Cart() {
                 showCancelButton: true,
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
-                if (result.isConfirmed) navigate('/client/settings');
+                if (result.isConfirmed) {
+                    const profileRoute = user.rol_id === 2 ? '/client/settings' : '/admin/settings';
+                    navigate(profileRoute);
+                }
             });
             return;
         }
@@ -244,7 +247,7 @@ export default function Cart() {
                         confirmButtonText: 'Ver Mis Pedidos'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            const ordersRoute = user.rol_id === 3 ? '/client/orders' : '/admin/orders';
+                            const ordersRoute = user.rol_id === 2 ? '/client/orders' : '/admin/orders';
                             navigate(ordersRoute);
                         }
                     });
@@ -265,7 +268,8 @@ export default function Cart() {
                         cancelButtonText: 'Cancelar'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            navigate('/client/settings');
+                            const profileRoute = user.rol_id === 2 ? '/client/settings' : '/admin/settings';
+                            navigate(profileRoute);
                         }
                     });
                 } else {

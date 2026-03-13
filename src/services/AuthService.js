@@ -19,8 +19,7 @@ class AuthService {
         try {
             await api.post('/logout');
         } finally {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            localStorage.clear();
         }
     }
 

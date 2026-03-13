@@ -90,6 +90,11 @@ const openWompiWidget = async (wompiParams, onSuccess, onError) => {
             throw new Error('WidgetCheckout no está disponible. Verifica que el script de Wompi esté cargado en index.html');
         }
 
+        if (!wompiParams.public_key) {
+            console.error('❌ Wompi Public Key is missing in wompiParams:', wompiParams);
+            throw new Error('La llave pública de Wompi no se recibió del servidor. Verifica tu .env en el backend.');
+        }
+
         console.log('✅ WidgetCheckout is available');
         console.log('🔧 Creating WidgetCheckout instance with params:', {
             currency: wompiParams.currency,
