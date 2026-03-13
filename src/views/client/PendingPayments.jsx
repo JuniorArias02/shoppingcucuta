@@ -98,15 +98,7 @@ export default function PendingPayments() {
                 wompiParams,
                 // onSuccess callback
                 (transaction) => {
-                    Swal.fire({
-                        title: '¡Pago Exitoso!',
-                        text: `Transacción aprobada: ${transaction.id}`,
-                        icon: 'success',
-                        background: '#151E32',
-                        color: '#fff'
-                    }).then(() => {
-                        fetchPendingOrders(); // Refresh orders list
-                    });
+                    navigate(`/client/gracias?id=${transaction.id}`);
                 },
                 // onError callback
                 (error) => {

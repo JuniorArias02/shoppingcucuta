@@ -222,9 +222,12 @@ const openWompiWeb = async (wompiParams) => {
             queryParams.append('signature:timestamp', String(timestamp || '').trim());
         }
 
-        const checkoutUrl = `https://checkout.wompi.co/p/?${queryParams.toString()}`;
+        const isSandbox = (wompiParams.public_key || '').startsWith('pub_test');
+        const baseUrl = isSandbox ? 'https://sandbox.wompi.co/p/' : 'https://checkout.wompi.co/p/';
+        
+        const checkoutUrl = `${baseUrl}?${queryParams.toString()}`;
 
-        console.log('🌐 Generated URL:', checkoutUrl);
+        console.log('🌐 Generated URL (' + (isSandbox ? 'Sandbox' : 'Production') + '):', checkoutUrl);
 
         // Copiar al portapapeles automáticamente
         try {

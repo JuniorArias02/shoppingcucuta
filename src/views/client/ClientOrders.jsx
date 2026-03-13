@@ -85,154 +85,20 @@ export default function ClientOrders() {
             });
 
             const PaymentService = (await import('../../services/PaymentService')).default;
+            const { openWompiPayment } = await import('../../utils/wompiHelper');
             const wompiParams = await PaymentService.initWompiTransaction(order.id);
 
-            // Load Widget
-            if (!document.getElementById('wompi-widget-script')) {
-                const script = document.createElement('script');
-                script.src = 'https://checkout.wompi.co/widget.js';
-                script.id = 'wompi-widget-script';
-                script.async = true;
-                document.body.appendChild(script);
-
-                await new Promise((resolve, reject) => {
-                    script.onload = resolve;
-                    script.onerror = reject;
-                });
-            }
-
-            // Close Swal loading
             Swal.close();
 
-            // Ask User for Preference (Widget vs Web)
-            const { value: preference } = await Swal.fire({
-                title: '<strong class="text-white text-xl">¿Cómo prefieres pagar?</strong>',
-                html: `
-                    <div class="flex flex-col gap-4 mt-4">
-                        <button id="btn-widget-order" class="group relative flex items-center gap-4 p-4 rounded-xl bg-sc-navy border border-white/10 hover:border-sc-cyan/50 transition-all hover:bg-white/5 text-left">
-                            <div class="bg-sc-cyan/10 p-3 rounded-full text-sc-cyan group-hover:scale-110 transition-transform">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-white text-lg">En esta web</h4>
-                                <p class="text-sm text-slate-400">Paga sin salir de Venezia Pizzas (Widget).</p>
-                            </div>
-                        </button>
-
-                        <button id="btn-web-order" class="group relative flex items-center gap-4 p-4 rounded-xl bg-sc-navy border border-white/10 hover:border-sc-magenta/50 transition-all hover:bg-white/5 text-left">
-                            <div class="bg-sc-magenta/10 p-3 rounded-full text-sc-magenta group-hover:scale-110 transition-transform">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-white text-lg">Ir a Wompi</h4>
-                                <p class="text-sm text-slate-400">Paga en la página segura de Wompi.</p>
-                            </div>
-                        </button>
-                    </div>
-                `,
-                showConfirmButton: false,
-                showCancelButton: true,
-                cancelButtonText: 'Cancelar',
-                background: '#151E32',
-                color: '#fff',
-                width: 500,
-                didOpen: () => {
-                    document.getElementById('btn-widget-order').addEventListener('click', () => Swal.clickConfirm());
-                    document.getElementById('btn-web-order').addEventListener('click', () => Swal.clickDeny());
+            await openWompiPayment(
+                wompiParams,
+                (transaction) => {
+                    navigate(`/client/gracias?id=${transaction.id}`);
+                },
+                (error) => {
+                    console.error('Wompi Error:', error);
                 }
-            });
-
-            if (preference === true) { // Widget Selected
-                // Load Widget Logic
-                if (!document.getElementById('wompi-widget-script')) {
-                    const script = document.createElement('script');
-                    script.src = 'https://checkout.wompi.co/widget.js';
-                    script.id = 'wompi-widget-script';
-                    script.async = true;
-                    document.body.appendChild(script);
-
-                    await new Promise((resolve, reject) => {
-                        script.onload = resolve;
-                        script.onerror = reject;
-                    });
-                }
-
-                const checkout = new window.WidgetCheckout({
-                    currency: wompiParams.currency,
-                    amountInCents: wompiParams.amount_in_cents,
-                    reference: wompiParams.reference,
-                    publicKey: wompiParams.public_key,
-                    signature: { integrity: wompiParams.signature },
-                    redirectUrl: wompiParams.redirect_url,
-                });
-
-                checkout.open(function (result) {
-                    const transaction = result.transaction;
-                    if (transaction.status === 'APPROVED') {
-                        Swal.fire({
-                            title: '¡Pago Exitoso!',
-                            text: `Transacción aprobada: ${transaction.id}`,
-                            icon: 'success',
-                            background: '#151E32',
-                            color: '#fff'
-                        }).then(() => {
-                            fetchOrders();
-                        });
-                    } else if (transaction.status === 'DECLINED') {
-                        Swal.fire({
-                            title: 'Pago Rechazado',
-                            text: 'Tu banco ha rechazado la transacción.',
-                            icon: 'error',
-                            background: '#151E32',
-                            color: '#fff'
-                        });
-                    } else {
-                        fetchOrders(); // Refresh status
-                    }
-                });
-
-            } else if (preference === false) { // Web Selected
-                // Validate Params
-                const requiredParams = ['public_key', 'currency', 'amount_in_cents', 'reference', 'signature', 'redirect_url'];
-                const missingParams = requiredParams.filter(param => !wompiParams[param]);
-
-                if (missingParams.length > 0) {
-                    console.error('Missing Wompi Params:', missingParams);
-                    Swal.fire({
-                        title: 'Error de Configuración',
-                        text: `Faltan parámetros de pago: ${missingParams.join(', ')}`,
-                        icon: 'error',
-                        background: '#151E32',
-                        color: '#fff'
-                    });
-                    return;
-                }
-
-                // Create Form for POST request
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'https://checkout.wompi.co/p/';
-
-                const params = {
-                    'public-key': wompiParams.public_key,
-                    'currency': wompiParams.currency,
-                    'amount-in-cents': wompiParams.amount_in_cents,
-                    'reference': wompiParams.reference,
-                    'signature:integrity': wompiParams.signature, // Key name for POST
-                    'redirect-url': wompiParams.redirect_url
-                };
-
-                for (const key in params) {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = key;
-                    input.value = params[key];
-                    form.appendChild(input);
-                }
-
-                document.body.appendChild(form);
-                form.submit();
-            }
+            );
 
         } catch (error) {
             console.error(error);

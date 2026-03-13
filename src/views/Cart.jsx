@@ -192,7 +192,7 @@ export default function Cart() {
                             // onSuccess callback
                             (transaction) => {
                                 setItems([]); // Clear cart
-                                navigate('/client/orders');
+                                navigate(`/client/gracias?id=${transaction.id}`);
                             },
                             // onError callback
                             (error) => {
