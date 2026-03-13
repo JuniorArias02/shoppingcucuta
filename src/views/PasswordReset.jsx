@@ -70,7 +70,9 @@ export default function PasswordReset() {
 
                 {/* Logo */}
                 <div className="relative z-10 flex items-center">
-                    <img src="/logo.jpg" alt="Shopping Cúcuta" className="h-10 w-auto object-contain rounded-lg shadow-lg shadow-sc-magenta/30" />
+                    <div className="p-1 bg-white/5 rounded-xl border border-white/10 shadow-xl shadow-sc-magenta/20">
+                        <img src="/logo.jpg" alt="Shopping Cúcuta" className="h-12 w-auto object-contain" />
+                    </div>
                 </div>
 
                 {/* Copy */}
@@ -121,8 +123,8 @@ export default function PasswordReset() {
 
                     {/* Logo móvil */}
                     <div className="flex items-center gap-3 mb-10 lg:hidden">
-                        <div className="w-9 h-9 rounded-xl overflow-hidden shadow-lg shadow-sc-magenta/30">
-                            <img src="/logo.jpg" alt="Shopping Cúcuta" className="w-full h-full object-cover" />
+                        <div className="w-11 h-11 rounded-lg overflow-hidden shadow-lg shadow-sc-magenta/30 bg-white/5 p-1">
+                            <img src="/logo.jpg" alt="Shopping Cúcuta" className="w-full h-full object-contain" />
                         </div>
                         <span className="text-white font-bold tracking-tight">Shopping Cúcuta</span>
                     </div>

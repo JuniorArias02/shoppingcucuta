@@ -61,8 +61,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     {/* Brand Header */}
                     <div className="h-24 flex items-center px-8 border-b border-slate-800/60 bg-gradient-to-r from-sc-navy-card to-transparent">
                         <Link to="/" className="flex items-center gap-3 group">
-                            <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-sc-magenta/20 group-hover:shadow-sc-magenta/40 transition-shadow duration-300">
-                                <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+                            <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-lg shadow-sc-magenta/20 group-hover:shadow-sc-magenta/40 transition-all duration-300 bg-white/5 p-1">
+                                <img src="/logo.jpg" alt="Logo" className="w-full h-full object-contain" />
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent group-hover:to-white transition-all">

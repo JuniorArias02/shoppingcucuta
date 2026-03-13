@@ -62,7 +62,9 @@ export default function Register() {
 
                 {/* Logo */}
                 <div className="relative z-10 flex items-center">
-                    <img src="/logo.jpg" alt="Shopping Cúcuta" className="h-10 w-auto object-contain rounded-lg shadow-lg shadow-sc-cyan/30" />
+                    <div className="p-1 bg-white/5 rounded-xl border border-white/10 shadow-xl shadow-sc-cyan/20">
+                        <img src="/logo.jpg" alt="Shopping Cúcuta" className="h-12 w-auto object-contain" />
+                    </div>
                 </div>
 
                 {/* Copy */}
@@ -106,8 +108,10 @@ export default function Register() {
                 <div className="relative z-10 max-w-sm w-full mx-auto">
 
                     {/* Logo móvil */}
-                    <div className="mb-10 lg:hidden">
-                        <img src="/logo.jpg" alt="Shopping Cúcuta" className="h-10 w-auto object-contain rounded-lg shadow-lg shadow-sc-cyan/30" />
+                    <div className="mb-10 lg:hidden flex justify-center">
+                        <div className="p-1 bg-white/5 rounded-xl border border-white/10 shadow-xl shadow-sc-cyan/20">
+                            <img src="/logo.jpg" alt="Shopping Cúcuta" className="h-12 w-auto object-contain" />
+                        </div>
                     </div>
 
                     {/* Header */}
