@@ -61,6 +61,7 @@ export default function Orders() {
                         <p><span class="text-slate-500">Teléfono:</span> ${order.cliente.telefono}</p>
                         <p><span class="text-slate-500">Dirección:</span> ${order.cliente.direccion}</p>
                         <p><span class="text-slate-500">Ciudad:</span> ${order.cliente.ciudad} (${order.cliente.departamento})</p>
+                        <p><span class="text-slate-500">Codigo Postal:</span> ${order.cliente.codigo_postal}</p>
                     </div>
                 </div>
             `;

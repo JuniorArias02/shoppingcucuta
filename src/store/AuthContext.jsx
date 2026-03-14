@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AuthService from '../services/AuthService';
 import useInactivityTimer from '../utils/useInactivityTimer';
+import Swal from 'sweetalert2';
 
 const AuthContext = createContext(null);
 
