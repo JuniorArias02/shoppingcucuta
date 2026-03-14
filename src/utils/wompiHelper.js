@@ -85,53 +85,31 @@ const ensureWompiScriptLoaded = (publicKey) => {
         
         console.log(`🔍 Checking Wompi Script (${isSandbox ? 'Sandbox' : 'Production'})...`);
 
-        // 1. Polling: Verificar si el objeto global aparece (por si el script ya está en el DOM)
+        // 1. Polling: Verificar si el objeto global aparece
         let attempts = 0;
-        const maxAttempts = 100; // 10 segundos (100 * 100ms)
+        const maxAttempts = 100; // 10 segundos
         
         const checkGlobal = setInterval(() => {
             attempts++;
             if (typeof window.WidgetCheckout !== 'undefined') {
-                console.log('✅ WidgetCheckout found via Polling!');
+                console.log('✅ WidgetCheckout found!');
                 clearInterval(checkGlobal);
                 return resolve();
             }
 
             if (attempts >= maxAttempts) {
                 clearInterval(checkGlobal);
-                // Si llegamos aquí, intentaremos inyectar el script si no existe, o fallar
-                const scriptExists = !!document.querySelector(`script[src*="wompi.co/widget.js"]`);
-                if (!scriptExists) {
-                    injectScript();
-                } else {
-                    reject(new Error('El script de Wompi está en la página pero no se inicializó. ¿Quizás un AdBlocker lo bloqueó?'));
-                }
+                reject(new Error('No se pudo inicializar el Widget de Wompi. Por favor, verifica tu conexión o si un AdBlocker está bloqueando el script.'));
             }
         }, 100);
 
-        // 2. Inyección: Solo si no existe el tag
-        const injectScript = () => {
-            console.log(`🌐 Injecting Wompi script tag: ${scriptSrc}`);
+        // 2. Inyección: Solo si no existe ningún script de Wompi
+        if (!document.querySelector('script[src*="wompi.co/widget.js"]')) {
+            console.log(`🌐 Injecting script: ${scriptSrc}`);
             const script = document.createElement('script');
             script.src = scriptSrc;
             script.async = true;
-            
-            script.onload = () => {
-                console.log('✅ Wompi Script Tag loaded.');
-            };
-
-            script.onerror = () => {
-                clearInterval(checkGlobal);
-                console.error('❌ Wompi Network Error. Possible AdBlocker.');
-                reject(new Error(`Error de red al cargar Wompi. Esto suele pasar si tienes un **AdBlocker** activo. Por favor, intenta usar la opción **"Ir a Wompi (Web Checkout)"** que es más compatible.`));
-            };
-
             document.head.appendChild(script);
-        };
-
-        // Si no hay rastro del script, inyectar de una vez
-        if (!document.querySelector(`script[src*="wompi.co/widget.js"]`)) {
-            injectScript();
         }
     });
 };
@@ -208,31 +186,13 @@ const openWompiWidget = async (wompiParams, onSuccess, onError) => {
     } catch (error) {
         console.error('❌ Error en Widget:', error);
         
-        // Detectar si el error es por carga de script (posible AdBlocker)
-        const isScriptError = error.message.includes('script') || error.message.includes('inicializó') || error.message.includes('red');
-
-        if (isScriptError) {
-            Swal.fire({
-                title: 'Widget bloqueado',
-                text: 'Se detectó que tu navegador está bloqueando el widget de pago. Para tu seguridad, abriremos el pago en una ventana externa oficial de Wompi.',
-                icon: 'info',
-                background: '#151E32',
-                color: '#fff',
-                confirmButtonText: 'Continuar a Wompi Safe Pay',
-                allowOutsideClick: false
-            }).then(() => {
-                // FALLBACK AUTOMÁTICO A WEB CHECKOUT
-                openWompiWeb(wompiParams);
-            });
-        } else {
-            Swal.fire({
-                title: 'Error de Inicialización',
-                text: `No se pudo abrir el widget de pago: ${error.message}`,
-                icon: 'error',
-                background: '#151E32',
-                color: '#fff'
-            });
-        }
+        Swal.fire({
+            title: 'Error de Inicialización',
+            text: `No se pudo abrir el widget de pago: ${error.message}`,
+            icon: 'error',
+            background: '#151E32',
+            color: '#fff'
+        });
         
         if (onError) onError(error);
     }
