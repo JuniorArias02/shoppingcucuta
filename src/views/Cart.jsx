@@ -107,43 +107,39 @@ export default function Cart() {
             return;
         }
 
-        // Simplified Checkout Modal (Payment Method Only)
         const { value: selectedMethod } = await Swal.fire({
-            title: '<span class="text-white">Finalizar Compra</span>',
+            title: '<span class="text-white text-2xl font-bold">Finalizar Compra</span>',
             html: `
-                <div class="text-left space-y-4">
-                    <p class="text-sm text-slate-400">
-                        Enviaremos tu pedido a: <br/>
-                        <span class="text-white font-bold">${perfil.direccion}, ${perfil.ciudad}</span>
-                    </p>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1">Método de Pago</label>
-                        <select id="metodo_pago" class="swal2-input w-full !m-0" required>
-                            <option value="">Selecciona...</option>
-                            <option value="efectivo">Efectivo (Contra entrega)</option>
-                            <option value="transferencia">Transferencia Bancaria</option>
-                            <option value="wompi">Wompi (Tarjetas, PSE, Nequi)</option>
-                        </select>
+                <div class="text-left space-y-5 pt-4">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/10">
+                        <p class="text-xs text-slate-500 uppercase tracking-wider font-bold mb-2">Enviar a:</p>
+                        <p class="text-white font-medium flex items-center gap-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sc-cyan"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                           ${perfil.direccion}, ${perfil.ciudad}
+                        </p>
+                        <p class="text-slate-400 text-xs mt-1 ml-6">${perfil.numero_telefono}</p>
                     </div>
+
+                    <div class="bg-sc-cyan/10 p-3 rounded-lg border border-sc-cyan/20 flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sc-cyan"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                        <p class="text-sm text-sc-cyan font-bold">Pago Seguro vía Wompi</p>
+                    </div>
+
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1">Notas (Opcional)</label>
-                        <textarea id="notas" class="swal2-textarea w-full !m-0" placeholder="Instrucciones especiales..."></textarea>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Notas del Pedido (Opcional)</label>
+                        <textarea id="notas" class="w-full bg-sc-navy border border-white/10 rounded-xl p-3 text-white text-sm focus:border-sc-cyan outline-none transition-all h-24" placeholder="Instrucciones especiales para tu pedido..."></textarea>
                     </div>
                 </div>
             `,
             background: '#151E32',
             color: '#fff',
             confirmButtonColor: '#00C2CB',
-            confirmButtonText: 'Pagar Ahora',
+            confirmButtonText: 'Confirmar y Pagar',
             showCancelButton: true,
             cancelButtonText: 'Cancelar',
             preConfirm: () => {
-                const metodo = document.getElementById('metodo_pago').value;
-                if (!metodo) {
-                    Swal.showValidationMessage('Selecciona un método de pago');
-                }
                 return {
-                    metodo_pago: metodo,
+                    metodo_pago: 'wompi',
                     notas_cliente: document.getElementById('notas').value
                 };
             }
