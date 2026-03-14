@@ -74,16 +74,14 @@ export const openWompiPayment = async (wompiParams, onSuccess, onError) => {
 };
 
 /**
- * Asegura que el script de Wompi esté cargado usando un mecanismo robusto de polling
+ * Asegura que el script de Wompi esté cargado usando un mecanismo de polling
  */
-const ensureWompiScriptLoaded = (publicKey) => {
+const ensureWompiScriptLoaded = () => {
     return new Promise((resolve, reject) => {
-        const isSandbox = (publicKey || '').startsWith('pub_test');
-        const scriptSrc = isSandbox 
-            ? 'https://sandbox.wompi.co/widget.js' 
-            : 'https://checkout.wompi.co/widget.js';
+        // Wompi recomienda usar siempre esta URL, el ambiente se define por la llave pública
+        const scriptSrc = 'https://checkout.wompi.co/widget.js';
         
-        console.log(`🔍 Checking Wompi Script (${isSandbox ? 'Sandbox' : 'Production'})...`);
+        console.log('🔍 Checking Wompi Script...');
 
         // 1. Polling: Verificar si el objeto global aparece
         let attempts = 0;
@@ -91,26 +89,41 @@ const ensureWompiScriptLoaded = (publicKey) => {
         
         const checkGlobal = setInterval(() => {
             attempts++;
+            
             if (typeof window.WidgetCheckout !== 'undefined') {
-                console.log('✅ WidgetCheckout found!');
+                console.log('✅ WidgetCheckout found in global scope!');
                 clearInterval(checkGlobal);
                 return resolve();
             }
 
+            // En cada intento, ver si el script tag existe
+            if (attempts % 10 === 0) {
+                const scriptTag = document.querySelector(`script[src*="wompi.co/widget.js"]`);
+                console.log(`⏳ Attempt ${attempts/10}s: WidgetCheckout still undefined. Script tag exists: ${!!scriptTag}`);
+            }
+
             if (attempts >= maxAttempts) {
                 clearInterval(checkGlobal);
-                reject(new Error('No se pudo inicializar el Widget de Wompi. Por favor, verifica tu conexión o si un AdBlocker está bloqueando el script.'));
+                const scriptTag = document.querySelector(`script[src*="wompi.co/widget.js"]`);
+                
+                if (!scriptTag) {
+                    // Si no está el tag, intentamos inyectarlo como último recurso
+                    console.log('🌐 Script tag missing, trying emergency injection...');
+                    const s = document.createElement('script');
+                    s.src = scriptSrc;
+                    s.async = true;
+                    document.head.appendChild(s);
+                    // Damos 3 segundos más
+                    setTimeout(() => {
+                        if (typeof window.WidgetCheckout !== 'undefined') resolve();
+                        else reject(new Error('El script de Wompi no se pudo cargar. Por favor refresca la página e intenta de nuevo.'));
+                    }, 3000);
+                    return;
+                }
+
+                reject(new Error('Wompi se cargó pero no se inicializó correctamente (WidgetCheckout is undefined).'));
             }
         }, 100);
-
-        // 2. Inyección: Solo si no existe ningún script de Wompi
-        if (!document.querySelector('script[src*="wompi.co/widget.js"]')) {
-            console.log(`🌐 Injecting script: ${scriptSrc}`);
-            const script = document.createElement('script');
-            script.src = scriptSrc;
-            script.async = true;
-            document.head.appendChild(script);
-        }
     });
 };
 
@@ -127,7 +140,7 @@ const openWompiWidget = async (wompiParams, onSuccess, onError) => {
         }
 
         // Asegurar que el script esté listo (máximo 10 segundos)
-        await ensureWompiScriptLoaded(wompiParams.public_key);
+        await ensureWompiScriptLoaded();
 
         console.log('✅ WidgetCheckout is available');
         
