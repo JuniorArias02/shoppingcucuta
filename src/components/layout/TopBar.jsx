@@ -36,10 +36,10 @@ export default function TopBar({ onMenuClick }) {
                 </Link>
 
                 {/* Notifications */}
-                <button className="relative p-2 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/5">
+                {/* <button className="relative p-2 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/5">
                     <Bell size={20} />
                     <span className="absolute top-2 right-2 w-2 h-2 bg-sc-magenta rounded-full ring-2 ring-sc-navy animate-pulse"></span>
-                </button>
+                </button> */}
 
                 {/* User Profile */}
                 <div className="flex items-center gap-3 pl-4 border-l border-slate-700/50">
