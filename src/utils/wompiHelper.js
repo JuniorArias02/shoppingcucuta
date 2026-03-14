@@ -207,19 +207,33 @@ const openWompiWidget = async (wompiParams, onSuccess, onError) => {
 
     } catch (error) {
         console.error('❌ Error en Widget:', error);
-        console.error('Error details:', {
-            message: error.message,
-            stack: error.stack,
-            wompiParams: wompiParams
-        });
+        
+        // Detectar si el error es por carga de script (posible AdBlocker)
+        const isScriptError = error.message.includes('script') || error.message.includes('inicializó') || error.message.includes('red');
 
-        Swal.fire({
-            title: 'Error',
-            text: `No se pudo abrir el widget de pago: ${error.message}`,
-            icon: 'error',
-            background: '#151E32',
-            color: '#fff'
-        });
+        if (isScriptError) {
+            Swal.fire({
+                title: 'Widget bloqueado',
+                text: 'Se detectó que tu navegador está bloqueando el widget de pago. Para tu seguridad, abriremos el pago en una ventana externa oficial de Wompi.',
+                icon: 'info',
+                background: '#151E32',
+                color: '#fff',
+                confirmButtonText: 'Continuar a Wompi Safe Pay',
+                allowOutsideClick: false
+            }).then(() => {
+                // FALLBACK AUTOMÁTICO A WEB CHECKOUT
+                openWompiWeb(wompiParams);
+            });
+        } else {
+            Swal.fire({
+                title: 'Error de Inicialización',
+                text: `No se pudo abrir el widget de pago: ${error.message}`,
+                icon: 'error',
+                background: '#151E32',
+                color: '#fff'
+            });
+        }
+        
         if (onError) onError(error);
     }
 };
