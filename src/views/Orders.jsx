@@ -18,6 +18,7 @@ export default function Orders() {
     const fetchOrders = async () => {
         try {
             const data = await OrderService.getOrders();
+            console.log(data);
             setOrders(data.data || []);
         } catch (error) {
             console.error("Error fetching orders", error);
@@ -51,27 +52,47 @@ export default function Orders() {
         const order = orders.find(o => o.id === id);
         if (!order) return;
 
-        let clientInfoHtml = '';
+        // Información de Envío (Específica del pedido)
+        const shippingInfoHtml = `
+            <div class="mb-4 p-3 bg-white/5 rounded-lg border border-white/10">
+                <h5 class="text-sc-cyan font-bold text-sm mb-2 uppercase tracking-wide flex items-center gap-2">
+                    <Truck size={14} />
+                    Detalles de Envío
+                </h5>
+                <div class="space-y-1 text-sm text-slate-300">
+                    <p><span class="text-slate-500">Dirección:</span> ${order.shipping?.direccion || 'N/A'}</p>
+                    <p><span class="text-slate-500">Ciudad:</span> ${order.shipping?.ciudad || 'N/A'}</p>
+                    <p><span class="text-slate-500">Teléfono:</span> ${order.shipping?.telefono || 'N/A'}</p>
+                    <p><span class="text-slate-500">Código Postal:</span> ${order.shipping?.codigo_postal || 'N/A'}</p>
+                </div>
+            </div>
+        `;
+
+        let clientProfileHtml = '';
         if (order.cliente) {
-            clientInfoHtml = `
+            clientProfileHtml = `
                 <div class="mb-4 p-3 bg-white/5 rounded-lg border border-white/10">
-                    <h5 class="text-sc-cyan font-bold text-sm mb-2 uppercase tracking-wide">Información del Cliente</h5>
+                    <h5 class="text-sc-cyan font-bold text-sm mb-2 uppercase tracking-wide flex items-center gap-2">
+                        <FileText size={14} />
+                        Perfil del Cliente (Admin)
+                    </h5>
                     <div class="space-y-1 text-sm text-slate-300">
                         <p><span class="text-slate-500">Nombre:</span> ${order.cliente.nombre}</p>
-                        <p><span class="text-slate-500">Teléfono:</span> ${order.cliente.telefono}</p>
-                        <p><span class="text-slate-500">Dirección:</span> ${order.cliente.direccion}</p>
-                        <p><span class="text-slate-500">Ciudad:</span> ${order.cliente.ciudad} (${order.cliente.departamento})</p>
-                        <p><span class="text-slate-500">Codigo Postal:</span> ${order.cliente.codigo_postal}</p>
+                        <p><span class="text-slate-500">Email:</span> ${order.cliente.email}</p>
                     </div>
                 </div>
             `;
         }
 
         Swal.fire({
-            title: `<span class="text-white">Pedido #${id}</span>`,
+            title: `<span class="text-white font-bold flex items-center justify-center gap-2">
+                        <Package class="text-sc-cyan" size={24} />
+                        Pedido #${id}
+                    </span>`,
             html: `
-                <div class="text-left bg-sc-navy p-4 rounded-xl border border-white/5">
-                    ${clientInfoHtml}
+                <div class="text-left bg-sc-navy p-2 rounded-xl">
+                    ${shippingInfoHtml}
+                    ${clientProfileHtml}
                     
                     <div class="flex justify-between items-center mb-3">
                          <p class="text-white font-bold">Fecha: ${order.fecha}</p>
