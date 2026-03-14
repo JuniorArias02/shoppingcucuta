@@ -18,10 +18,8 @@ export default function Orders() {
     const fetchOrders = async () => {
         try {
             const data = await OrderService.getOrders();
-            console.log(data);
             setOrders(data.data || []);
         } catch (error) {
-            console.error("Error fetching orders", error);
             Swal.fire({
                 title: 'Error',
                 text: 'No se pudieron cargar los pedidos.',

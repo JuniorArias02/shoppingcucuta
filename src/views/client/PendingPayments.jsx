@@ -22,7 +22,7 @@ export default function PendingPayments() {
 
             setOrders(data);
         } catch (error) {
-            console.error("Error loading pending orders", error);
+            // Error handling without console
         } finally {
             setLoading(false);
         }
@@ -88,8 +88,6 @@ export default function PendingPayments() {
             const PaymentService = (await import('../../services/PaymentService')).default;
             const wompiParams = await PaymentService.initWompiTransaction(order.id);
 
-            console.log('🔐 Wompi Params:', wompiParams);
-
             // Close loading
             Swal.close();
 
@@ -103,14 +101,12 @@ export default function PendingPayments() {
                         await PaymentService.verifyWompiTransaction(transaction.id);
                         navigate(`/client/gracias?id=${transaction.id}`);
                     } catch (verifyError) {
-                        console.error('Error verifying transaction:', verifyError);
                         // Aún así navegamos, el componente Gracias por tu compra tiene polling
                         navigate(`/client/gracias?id=${transaction.id}`);
                     }
                 },
                 // onError callback
                 (error) => {
-                    console.error('Wompi Payment Error:', error);
                     Swal.fire({
                         title: 'Error de Pago',
                         text: error?.response?.data?.message || 'No se pudo procesar el pago. Por favor intenta nuevamente.',
@@ -122,8 +118,6 @@ export default function PendingPayments() {
             );
 
         } catch (error) {
-            console.error('Error:', error);
-
             // Si el backend arrojó error de inventario u otra validación antes de abrir wompi
             Swal.fire({
                 title: 'Error',

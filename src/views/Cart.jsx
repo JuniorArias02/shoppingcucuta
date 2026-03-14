@@ -26,7 +26,7 @@ export default function Cart() {
             const data = await CartService.getCart();
             setItems(data);
         } catch (error) {
-            console.error(error);
+            // Silently fail or handle error if needed
         } finally {
             setLoading(false);
         }
@@ -52,7 +52,6 @@ export default function Cart() {
             setItems(prev => prev.map(i => i.id === id ? { ...i, cantidad: newQty } : i));
             await CartService.updateItem(id, newQty);
         } catch (error) {
-            console.error(error);
             // Revert on error
             fetchCart();
         }
@@ -64,7 +63,6 @@ export default function Cart() {
             setItems(prev => prev.filter(i => i.id !== id));
             await CartService.removeItem(id);
         } catch (error) {
-            console.error(error);
             fetchCart();
         }
     };
@@ -177,8 +175,6 @@ export default function Cart() {
                         const PaymentService = (await import('../services/PaymentService')).default;
                         const wompiParams = await PaymentService.initWompiTransaction(response.pedido.id);
 
-                        console.log('🔐 Wompi Params:', wompiParams);
-
                         // Close Swal loading
                         Swal.close();
 
@@ -193,14 +189,12 @@ export default function Cart() {
                                     await PaymentService.verifyWompiTransaction(transaction.id);
                                     navigate(`/client/gracias?id=${transaction.id}`);
                                 } catch (verifyError) {
-                                    console.error('Error verifying transaction:', verifyError);
                                     // Aún así navegamos, el componente Gracias por tu compra tiene polling
                                     navigate(`/client/gracias?id=${transaction.id}`);
                                 }
                             },
                             // onError callback
                             (error) => {
-                                console.error('Wompi Payment Error:', error);
                                 Swal.fire({
                                     title: 'Error de Pago',
                                     text: 'No se pudo iniciar la pasarela de pagos. Por favor intenta nuevamente desde "Mis Pedidos".',
@@ -214,7 +208,6 @@ export default function Cart() {
                         );
 
                     } catch (wompiError) {
-                        console.error('Wompi Error:', wompiError);
                         Swal.fire({
                             title: 'Error de Pago',
                             text: 'No se pudo iniciar la pasarela de pagos. Por favor intenta nuevamente desde "Mis Pedidos".',
@@ -257,8 +250,6 @@ export default function Cart() {
                     });
                 }
             } catch (error) {
-                console.error('Error creating order:', error);
-
                 if (error.response?.data?.code === 'PROFILE_INCOMPLETE') {
                     Swal.fire({
                         title: 'Perfil Incompleto',
