@@ -118,12 +118,12 @@ const ensureWompiScriptLoaded = (publicKey) => {
             
             script.onload = () => {
                 console.log('✅ Wompi Script Tag loaded.');
-                // El polling de arriba detectará el objeto global
             };
 
             script.onerror = () => {
                 clearInterval(checkGlobal);
-                reject(new Error(`Error crítico de red al cargar el script desde ${scriptSrc}`));
+                console.error('❌ Wompi Network Error. Possible AdBlocker.');
+                reject(new Error(`Error de red al cargar Wompi. Esto suele pasar si tienes un **AdBlocker** activo. Por favor, intenta usar la opción **"Ir a Wompi (Web Checkout)"** que es más compatible.`));
             };
 
             document.head.appendChild(script);
