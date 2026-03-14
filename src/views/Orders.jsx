@@ -74,7 +74,7 @@ export default function Orders() {
                 <div class="mb-4 p-3 bg-white/5 rounded-lg border border-white/10">
                     <h5 class="text-sc-cyan font-bold text-sm mb-2 uppercase tracking-wide flex items-center gap-2">
                         <FileText size={14} />
-                        Perfil del Cliente (Admin)
+                        Perfil del Cliente
                     </h5>
                     <div class="space-y-1 text-sm text-slate-300">
                         <p><span class="text-slate-500">Nombre:</span> ${order.cliente.nombre}</p>
