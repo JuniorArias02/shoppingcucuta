@@ -74,7 +74,7 @@ export const openWompiPayment = async (wompiParams, onSuccess, onError) => {
 };
 
 /**
- * Asegura que el script de Wompi esté cargado
+ * Asegura que el script de Wompi esté cargado usando un mecanismo robusto de polling
  */
 const ensureWompiScriptLoaded = (publicKey) => {
     return new Promise((resolve, reject) => {
@@ -83,47 +83,56 @@ const ensureWompiScriptLoaded = (publicKey) => {
             ? 'https://sandbox.wompi.co/widget.js' 
             : 'https://checkout.wompi.co/widget.js';
         
-        // Si ya está definido, resolver de inmediato
-        if (typeof window.WidgetCheckout !== 'undefined') {
-            console.log('✅ Wompi Script already loaded (WidgetCheckout found)');
-            return resolve();
-        }
+        console.log(`🔍 Checking Wompi Script (${isSandbox ? 'Sandbox' : 'Production'})...`);
 
-        // Buscar si ya existe el tag pero no ha cargado
-        let script = document.querySelector(`script[src="${scriptSrc}"]`);
+        // 1. Polling: Verificar si el objeto global aparece (por si el script ya está en el DOM)
+        let attempts = 0;
+        const maxAttempts = 100; // 10 segundos (100 * 100ms)
         
-        if (!script) {
-            console.log(`🌐 Loading Wompi script: ${scriptSrc}`);
-            script = document.createElement('script');
+        const checkGlobal = setInterval(() => {
+            attempts++;
+            if (typeof window.WidgetCheckout !== 'undefined') {
+                console.log('✅ WidgetCheckout found via Polling!');
+                clearInterval(checkGlobal);
+                return resolve();
+            }
+
+            if (attempts >= maxAttempts) {
+                clearInterval(checkGlobal);
+                // Si llegamos aquí, intentaremos inyectar el script si no existe, o fallar
+                const scriptExists = !!document.querySelector(`script[src*="wompi.co/widget.js"]`);
+                if (!scriptExists) {
+                    injectScript();
+                } else {
+                    reject(new Error('El script de Wompi está en la página pero no se inicializó. ¿Quizás un AdBlocker lo bloqueó?'));
+                }
+            }
+        }, 100);
+
+        // 2. Inyección: Solo si no existe el tag
+        const injectScript = () => {
+            console.log(`🌐 Injecting Wompi script tag: ${scriptSrc}`);
+            const script = document.createElement('script');
             script.src = scriptSrc;
             script.async = true;
+            
+            script.onload = () => {
+                console.log('✅ Wompi Script Tag loaded.');
+                // El polling de arriba detectará el objeto global
+            };
+
+            script.onerror = () => {
+                clearInterval(checkGlobal);
+                reject(new Error(`Error crítico de red al cargar el script desde ${scriptSrc}`));
+            };
+
             document.head.appendChild(script);
+        };
+
+        // Si no hay rastro del script, inyectar de una vez
+        if (!document.querySelector(`script[src*="wompi.co/widget.js"]`)) {
+            injectScript();
         }
-
-        script.onload = () => {
-            console.log('✅ Wompi Script loaded successfully');
-            // Dar un pequeño respiro para que se inicialice el global
-            setTimeout(() => {
-                if (typeof window.WidgetCheckout !== 'undefined') {
-                    resolve();
-                } else {
-                    reject(new Error('El script de Wompi cargó pero WidgetCheckout no está definido.'));
-                }
-            }, 100);
-        };
-
-        script.onerror = () => {
-            reject(new Error(`Error al cargar el script de Wompi desde ${scriptSrc}`));
-        };
-
-        // Timeout de seguridad
-        setTimeout(() => {
-            if (typeof window.WidgetCheckout !== 'undefined') {
-                resolve();
-            } else {
-                reject(new Error('Tiempo de espera agotado al cargar el script de Wompi.'));
-            }
-        }, 5000);
     });
 };
 
@@ -139,7 +148,7 @@ const openWompiWidget = async (wompiParams, onSuccess, onError) => {
             throw new Error('La llave pública de Wompi no se recibió del servidor.');
         }
 
-        // Asegurar que el script esté listo
+        // Asegurar que el script esté listo (máximo 10 segundos)
         await ensureWompiScriptLoaded(wompiParams.public_key);
 
         console.log('✅ WidgetCheckout is available');
