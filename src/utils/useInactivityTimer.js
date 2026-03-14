@@ -46,7 +46,8 @@ const useInactivityTimer = (onInactive, timeout = 30 * 60 * 1000) => {
             const timeSinceLastActivity = Date.now() - parseInt(lastActivity);
 
             // Si han pasado más de 30 minutos desde la última actividad
-            if (timeSinceLastActivity > timeout) {
+            // Agregamos un pequeño margen de gracia de 5 segundos para evitar falsos positivos justo al loguear
+            if (timeSinceLastActivity > timeout && timeSinceLastActivity > 5000) {
                 console.log('⏰ Sesión expirada (tiempo transcurrido desde última actividad)');
                 onInactive();
                 return;

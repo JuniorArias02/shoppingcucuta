@@ -11,6 +11,8 @@ class AuthService {
         if (response.data.access_token) {
             localStorage.setItem('token', response.data.access_token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
+            // Reiniciar el contador de inactividad de inmediato al loguear
+            localStorage.setItem('lastActivity', Date.now().toString());
         }
         return response.data;
     }

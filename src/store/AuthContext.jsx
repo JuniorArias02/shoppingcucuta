@@ -42,8 +42,8 @@ export const AuthProvider = ({ children }) => {
         return data;
     };
 
-    // Función para manejar la inactividad
-    const handleInactivity = () => {
+    // Función para manejar la inactividad - Usamos useCallback para que la función sea estable
+    const handleInactivity = useCallback(() => {
         console.log('🔒 Cerrando sesión por inactividad...');
 
         // Limpiar TODO el localStorage
@@ -53,11 +53,18 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
 
         // Opcional: Mostrar un mensaje al usuario
-        alert('Tu sesión ha expirado por inactividad. Por favor, inicia sesión nuevamente.');
-
-        // Redirigir al login si es necesario
-        window.location.href = '/login';
-    };
+        Swal.fire({
+            title: 'Sesión Expirada',
+            text: 'Tu sesión ha expirado por inactividad. Por favor, inicia sesión nuevamente.',
+            icon: 'info',
+            background: '#151E32',
+            color: '#fff',
+            confirmButtonColor: '#D9258B'
+        }).then(() => {
+            // Redirigir al login
+            window.location.href = '/login';
+        });
+    }, []);
 
     // Activar el temporizador de inactividad solo si hay un usuario logueado
     useInactivityTimer(

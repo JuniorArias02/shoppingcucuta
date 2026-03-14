@@ -12,11 +12,8 @@ export default function GraciasPorTuCompra() {
     const [message, setMessage] = useState('Verificando estado del pago...');
     const [orderId, setOrderId] = useState(null);
 
-    // Wompi sends transaction info in query params, e.g. ?id=...&env=...
-    // But our redirect might just be a simple landing. 
-    // We should look for 'id' (transaction id) provided by Wompi redirect.
     const transactionId = searchParams.get('id');
-    const env = searchParams.get('env'); // 'test' or 'prod'
+    const env = searchParams.get('env');
 
     useEffect(() => {
         if (!transactionId) {
@@ -41,12 +38,10 @@ export default function GraciasPorTuCompra() {
                 while (attempts < maxAttempts) {
                     try {
                         const response = await OrderService.getOrders({ page: 1 });
-                        const orders = response.data.data || response.data || []; // Handle pagination structure if needed
+                        const orders = response.data.data || response.data || []; 
 
                         if (orders.length > 0) {
                             const latestOrder = orders[0];
-                            // Check if this latest order is paid or processing
-                            // Note: Wompi might update it to 'pagado' via webhook
                             if (latestOrder.estado === 'pagado' || latestOrder.estado === 'procesando') {
                                 foundPaid = true;
                                 break;

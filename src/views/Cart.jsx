@@ -186,9 +186,17 @@ export default function Cart() {
                         await openWompiPayment(
                             wompiParams,
                             // onSuccess callback
-                            (transaction) => {
-                                setItems([]); // Clear cart
-                                navigate(`/client/gracias?id=${transaction.id}`);
+                            async (transaction) => {
+                                try {
+                                    setItems([]); // Clear cart
+                                    // Notificar al backend de inmediato
+                                    await PaymentService.verifyWompiTransaction(transaction.id);
+                                    navigate(`/client/gracias?id=${transaction.id}`);
+                                } catch (verifyError) {
+                                    console.error('Error verifying transaction:', verifyError);
+                                    // Aún así navegamos, el componente Gracias por tu compra tiene polling
+                                    navigate(`/client/gracias?id=${transaction.id}`);
+                                }
                             },
                             // onError callback
                             (error) => {

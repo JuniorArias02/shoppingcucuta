@@ -9,6 +9,13 @@ const PaymentService = {
     },
 
 
+    // Verify Wompi Transaction Status with Backend
+    verifyWompiTransaction: async (transactionId) => {
+        const response = await api.post('/payments/wompi/verify', { transaction_id: transactionId });
+        return response.data;
+    },
+
+
     // Confirm Payment (Manual/Legacy)
     confirmPayment: async (pagoId) => {
         const response = await api.post(`/payments/${pagoId}/confirm`);

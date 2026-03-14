@@ -97,8 +97,16 @@ export default function PendingPayments() {
             await openWompiPayment(
                 wompiParams,
                 // onSuccess callback
-                (transaction) => {
-                    navigate(`/client/gracias?id=${transaction.id}`);
+                async (transaction) => {
+                    try {
+                        // Notificar al backend de inmediato para sincronizar estado
+                        await PaymentService.verifyWompiTransaction(transaction.id);
+                        navigate(`/client/gracias?id=${transaction.id}`);
+                    } catch (verifyError) {
+                        console.error('Error verifying transaction:', verifyError);
+                        // Aún así navegamos, el componente Gracias por tu compra tiene polling
+                        navigate(`/client/gracias?id=${transaction.id}`);
+                    }
                 },
                 // onError callback
                 (error) => {
